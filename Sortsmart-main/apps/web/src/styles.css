@@ -5,6 +5,7 @@
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Geist Variable", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --cat-paper: #ffb84d;
   --cat-plastic: #0a84ff;
+  --cat-deposit: #ff6ac1;
   --cat-glass: #64d2ff;
   --cat-organic: #30d158;
   --cat-residual: #a1a1aa;
@@ -294,8 +295,7 @@ main,
 .streams h2,
 .preview h2,
 .modes h2,
-.last h2,
-.get h1 {
+.last h2 {
   font-size: clamp(2.6rem, 6.6vw, 6rem);
   line-height: 1;
 }
@@ -303,7 +303,7 @@ main,
 /* Tubes */
 .tubes {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: clamp(6px, 1vw, 12px);
   width: min(540px, 100%);
   height: clamp(200px, 30vh, 280px);
@@ -561,7 +561,7 @@ main,
 .win__dock {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   width: min(560px, 100%);
   height: 66px;
@@ -633,27 +633,6 @@ main,
   animation: rise 620ms var(--expo) backwards;
 }
 
-/* Download */
-.dl {
-  display: grid;
-  justify-items: center;
-  gap: 14px;
-}
-.dl--wait {
-  height: 96px;
-}
-.dl__row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  animation: rise 700ms var(--expo) backwards;
-}
-.dl-note {
-  margin: 0;
-  color: var(--faint);
-  font-size: 13px;
-}
 .foot {
   position: relative;
   display: flex;
@@ -667,52 +646,6 @@ main,
 .foot a {
   color: var(--soft);
 }
-.get {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 30px;
-  min-height: 100svh;
-  padding: 96px 20px 40px;
-  text-align: center;
-}
-.get__meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 310px));
-  gap: 26px;
-  margin: 0;
-  padding: 22px 26px;
-  border-radius: 28px;
-  text-align: left;
-}
-.get__meta dt {
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-.get__meta dd {
-  margin: 0 0 6px;
-  color: var(--soft);
-  font-size: 13px;
-}
-.get__hint {
-  color: var(--faint) !important;
-}
-.sha {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--faint);
-  font: 11px var(--font-mono);
-  cursor: pointer;
-}
-.sha:hover {
-  color: #fff;
-}
-.get__all {
-  color: var(--soft);
-  font-size: 13.5px;
-}
-
 /* Docs: the one place words are the point. */
 .page {
   max-width: 1120px;
@@ -837,9 +770,6 @@ code {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 14px;
-  }
-  .get__meta {
-    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 620px) {

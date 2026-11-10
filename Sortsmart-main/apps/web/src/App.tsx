@@ -27,9 +27,9 @@ export function Layout() {
           <Link to="/docs" aria-current={pathname === "/docs" ? "page" : undefined}>
             Docs
           </Link>
-          <Link to="/download" className="nav__cta" aria-current={pathname === "/download" ? "page" : undefined}>
-            Download
-          </Link>
+          <a href="/app/" className="nav__cta">
+            Open app
+          </a>
         </nav>
       </header>
       <main id="main">

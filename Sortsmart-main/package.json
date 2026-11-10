@@ -5,16 +5,15 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/web",
+    "apps/server"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w @sorte/web",
-    "dev:desktop": "npm run dev -w @sorte/desktop",
-    "tauri": "npm run tauri -w @sorte/desktop --",
-    "typecheck": "tsc -p packages/core && tsc -p packages/ui && tsc -p apps/web && tsc -p apps/desktop",
-    "test": "vitest run",
-    "build:web": "npm run build -w @sorte/web",
-    "release:version": "node scripts/bump-version.mjs"
+    "dev": "npm run dev -w @sorte/web",
+    "build": "npm run build -w @sorte/web",
+    "start": "npm run start -w @sorte/server",
+    "typecheck": "tsc -p packages/core && tsc -p packages/ui && tsc -p apps/server && tsc -p apps/web",
+    "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

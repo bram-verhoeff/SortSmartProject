@@ -1,5 +1,7 @@
 import type { ModelOutput, ProviderConfig, ProviderKind } from "../schemas";
 import type { HttpTransport } from "../transport";
+import type { CategoryId } from "../categories";
+import type { ExampleStore, ImageEmbedder } from "./clip";
 
 export const ACCEPTED_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 export type ImageMime = (typeof ACCEPTED_MIME)[number];
@@ -48,10 +50,16 @@ export interface AIProvider {
   testConnection(signal?: AbortSignal): Promise<ConnectionTestResult>;
   /** Optional: get ready ahead of the first scan so it isn't the slow one. */
   warmUp?(signal?: AbortSignal): Promise<void>;
+  /** Optional: learn from the user's choice for a photo this provider just classified. True if it learned something new. */
+  learn?(imageSha256: string, category: CategoryId): Promise<boolean>;
   /** Returns the validated model output. Throws ProviderError on any failure. */
   classify(input: ImageInput, signal?: AbortSignal): Promise<ProviderClassifyOutput>;
 }
 
 export interface ProviderFactoryContext {
   transport: HttpTransport;
+  /** Runs the in-browser model for fast mode. Absent outside the web app. */
+  embedder?: ImageEmbedder;
+  /** Stores what fast mode learned from the user's corrections. */
+  examples?: ExampleStore;
 }

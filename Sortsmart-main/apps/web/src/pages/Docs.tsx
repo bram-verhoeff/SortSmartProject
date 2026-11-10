@@ -36,15 +36,15 @@ export function Docs() {
           <section id="installation">
             <h2>Installation</h2>
             <p>
-              Published installers appear on the <a href="/download">download page</a> with their SHA-256 checksum. Until a release is published, build from source (see{" "}
-              <a href="#development">Development setup</a>). macOS 11+ and Windows 10 (1803+) with WebView2 are the targets.
+              SORTÉ runs in the browser: nothing to install on the computer that uses it. It needs the SORTÉ server and a MySQL database (XAMPP works) on the same computer; see{" "}
+              <a href="#development">Development setup</a>. Open <a href="/app/">the app</a> in a current Chrome, Edge, Firefox or Safari and allow camera access.
             </p>
-            <p>On first launch SORTÉ starts in <strong>Demo</strong> mode: no account or key needed. It checks for a new version first thing on every launch, downloads it in the background, and asks you to restart.</p>
+            <p>On first launch SORTÉ starts in <strong>Demo</strong> mode: no account or key needed.</p>
           </section>
 
           <section id="providers">
             <h2>AI provider setup</h2>
-            <p>Open <em>AI Providers</em> in the desktop app, add a provider, test the connection, discover models, and pick one. Each adapter uses the provider's own API format.</p>
+            <p>Open <em>AI Providers</em> in the app, add a provider, test the connection, discover models, and pick one. Each adapter uses the provider's own API format.</p>
             <table className="docs__table">
               <thead>
                 <tr>
@@ -89,8 +89,8 @@ export function Docs() {
           <section id="keys">
             <h2>API key management</h2>
             <p>
-              Keys are written to the OS credential store (macOS Keychain, Windows Credential Manager) by the Rust backend and bound to the provider's host. The UI only ever sees the last four
-              characters. Keys are never placed in settings files, logs, the web build, or environment variables. Replace or delete a key at any time from the provider panel.
+              Keys are sent once to the SORTÉ server, stored in the MySQL database and bound to the provider's host. They never go back to the browser: the UI only ever sees the last
+              four characters. Keys are never placed in settings, logs, the JavaScript bundle, or environment variables. Replace or delete a key at any time from the provider panel.
             </p>
           </section>
 
@@ -127,7 +127,7 @@ export function Docs() {
           <section id="privacy">
             <h2>Privacy</h2>
             <ul>
-              <li>Local and Demo modes send no images off the device. The only other request is the update check, to GitHub. There is no telemetry.</li>
+              <li>Local and Demo modes send no images off this computer. There is no telemetry.</li>
               <li>Cloud mode sends the resized image and a short prompt to the provider you selected — nothing else.</li>
               <li>Hybrid mode only escalates to cloud after you enable it and acknowledge a disclosure. Hazardous items are never escalated.</li>
               <li>History is off by default. When enabled it stores results and an image hash — never the image — and is pruned after your retention period. You can clear it at any time.</li>
@@ -137,8 +137,9 @@ export function Docs() {
           <section id="security">
             <h2>Security</h2>
             <ul>
-              <li>The website has no access to keys and cannot call cloud providers. Its JavaScript is static.</li>
-              <li>The desktop webview has a strict CSP and no direct network access; all HTTP goes through the Rust backend, which validates URLs and attaches keys only to the host they were saved for.</li>
+              <li>There is no login, so the server only listens on this computer (127.0.0.1) and refuses requests from other sites.</li>
+              <li>The browser never calls providers directly; all HTTP goes through the SORTÉ server, which validates URLs and attaches keys only to the host they were saved for.</li>
+              <li>Pages are served with a strict Content Security Policy.</li>
               <li>Plain HTTP is accepted only for loopback endpoints. Cloud endpoints require HTTPS.</li>
               <li>Local inference servers stay on localhost; SORTÉ does not expose them.</li>
               <li>Every model response, persisted setting and device command is schema-validated.</li>
@@ -149,16 +150,14 @@ export function Docs() {
           <section id="development">
             <h2>Development setup</h2>
             <pre className="code">
-              <code>{`# Node 20+, Rust stable (rustup), platform toolchains
+              <code>{`# Node 20+, MySQL running (XAMPP), database/schema.sql imported
 npm install
-npm test                # core logic tests (mock providers, no network)
+npm run dev             # website + app + API on http://localhost:5173
+npm test                # core and server tests (no network)
 npm run typecheck
-npm run dev:web         # website on http://localhost:5173
-npm run tauri dev       # desktop app
-npm run tauri build     # installers for the current OS
-npm run release:manifest -- --base-url https://…   # update download manifest from artifacts`}</code>
+npm run build && npm start   # production build on http://localhost:3000`}</code>
             </pre>
-            <p>Code signing (Apple Developer ID + notarisation, Windows Authenticode) requires your own credentials, supplied through CI secrets — never committed.</p>
+            <p>Database settings come from <code>.env</code> (see <code>.env.example</code>). The defaults match a fresh XAMPP install.</p>
           </section>
         </article>
       </div>

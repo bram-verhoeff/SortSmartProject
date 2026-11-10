@@ -133,3 +133,30 @@ describe("registry & transport", () => {
     await expect(t.request({ method: "GET", url: "http://localhost:11434/api/tags", timeoutMs: 1000 })).resolves.toMatchObject({ status: 200 });
   });
 });
+
+describe("ProviderError.fromStatus", () => {
+  it("names a used-up daily quota instead of a generic rate limit", () => {
+    // Shape of Gemini's free-tier answer once the daily requests are gone.
+    const body = JSON.stringify({
+      error: {
+        code: 429,
+        message: "You exceeded your current quota, please check your plan and billing details.",
+        details: [
+          { violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier", quotaDimensions: { model: "gemini-3.8-flash" }, quotaValue: "20" }] },
+          { retryDelay: "74737s" },
+        ],
+      },
+    });
+    const e = ProviderError.fromStatus(429, body, true);
+    expect(e.kind).toBe("rate-limit");
+    expect(e.message).toContain("Daily limit reached for gemini-3.8-flash (20 requests a day)");
+    expect(e.message).toContain("about 21 h");
+    expect(e.retryAfterMs).toBe(74_737_000);
+  });
+
+  it("keeps short rate limits retryable with the provider's delay", () => {
+    const e = ProviderError.fromStatus(429, JSON.stringify({ error: { message: "Slow down" }, details: [{ retryDelay: "23s" }] }), false);
+    expect(e.message).toContain("rate limit was reached");
+    expect(e.retryAfterMs).toBe(23_000);
+  });
+});

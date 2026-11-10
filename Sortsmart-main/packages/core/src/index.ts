@@ -18,6 +18,7 @@ export { OllamaProvider } from "./providers/ollama";
 export { OpenAICompatibleProvider } from "./providers/openaiCompatible";
 export { AnthropicProvider } from "./providers/anthropic";
 export { GeminiProvider, geminiThinkingConfig } from "./providers/gemini";
+export { ClipProvider, CLIP_MODEL, CLIP_ENDPOINT, CLIP_PROMPTS, clipDecision, type ImageEmbedder, type ExampleStore, type LearnedExample } from "./providers/clip";
 export * from "./device/types";
 export * from "./device/command";
 export { MockSortingDevice, type MockDeviceScenario } from "./device/mock";

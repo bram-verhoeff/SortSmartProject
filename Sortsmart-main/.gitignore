@@ -12,3 +12,4 @@ target/
 *.p8
 *.key
 .claude/
+.cache/

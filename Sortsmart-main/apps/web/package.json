@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@sorte/core": "*",
     "@sorte/ui": "*",
     "react": "^18.3.1",
