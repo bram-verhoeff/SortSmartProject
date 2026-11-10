@@ -51,7 +51,7 @@ export const ClassificationResultSchema = z.object({
 });
 export type ClassificationResult = z.infer<typeof ClassificationResultSchema>;
 
-export const ProviderKindSchema = z.enum(["mock", "ollama", "openai-compatible", "anthropic", "gemini"]);
+export const ProviderKindSchema = z.enum(["mock", "clip", "ollama", "openai-compatible", "anthropic", "gemini"]);
 export type ProviderKind = z.infer<typeof ProviderKindSchema>;
 
 export const ProviderConfigSchema = z.object({

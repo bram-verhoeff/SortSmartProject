@@ -45,7 +45,19 @@ export class ProviderError extends Error {
     if (status === 429) {
       // Gemini says how long to wait: "retryDelay": "23s".
       const delay = /"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/.exec(body);
-      return new ProviderError("rate-limit", `The provider's rate limit was reached (429). ${detail}`.trim(), { status, dataSent, retryAfterMs: delay ? Number(delay[1]) * 1000 : undefined });
+      const retryAfterMs = delay ? Number(delay[1]) * 1000 : undefined;
+      // A used-up daily quota (Gemini free tier: "...PerDay...") won't clear by retrying. Say so plainly.
+      if (/PerDay/i.test(body)) {
+        const model = /"model"\s*:\s*"([^"]+)"/.exec(body)?.[1];
+        const limit = /"quotaValue"\s*:\s*"(\d+)"/.exec(body)?.[1];
+        const hours = retryAfterMs ? Math.max(1, Math.round(retryAfterMs / 3_600_000)) : null;
+        return new ProviderError(
+          "rate-limit",
+          `Daily limit reached${model ? ` for ${model}` : ""}${limit ? ` (${limit} requests a day)` : ""}.${hours ? ` It resets in about ${hours} h.` : ""} Pick another model under AI Providers, or enable billing with the provider.`,
+          { status, dataSent, retryAfterMs: retryAfterMs ?? 3_600_000 },
+        );
+      }
+      return new ProviderError("rate-limit", `The provider's rate limit was reached (429). ${detail}`.trim(), { status, dataSent, retryAfterMs });
     }
     if (status >= 500) return new ProviderError("server", `Provider error (${status}). ${detail}`, { status, dataSent });
     return new ProviderError("invalid-request", `Request rejected (${status}). ${detail}`, { status, dataSent });

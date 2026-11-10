@@ -68,6 +68,14 @@ export function CategoryGlyph({ id, size = 28, color = "currentColor" }: { id: s
           <path d="M9 13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" opacity="0.5" />
         </g>
       )}
+      {id === "deposit" && (
+        <g {...common}>
+          {/* A bottle with a return arrow: money back. */}
+          <path d="M13.5 4h5M14 4v4.5c-2.4 1.3-3.5 3.2-3.5 5.8V26c0 .8.7 1.5 1.5 1.5h5.5" />
+          <path d="M18 4v4.5c1.2.6 2 1.4 2.6 2.4" opacity="0.6" />
+          <path d="M26.5 18a4.5 4.5 0 1 1-1.3-3.2M26.5 13.5v3h-3" />
+        </g>
+      )}
       {id === "glass" && (
         <g {...common}>
           <path d="M13 4h6M13.5 4v5c-3 1.5-4.5 3.8-4.5 7v9c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-9c0-3.2-1.5-5.5-4.5-7V4" />
@@ -94,6 +102,7 @@ export function categoryColor(id: string): string {
   const map: Record<string, string> = {
     paper: "var(--cat-paper)",
     "plastic-metal": "var(--cat-plastic)",
+    deposit: "var(--cat-deposit)",
     glass: "var(--cat-glass)",
     organic: "var(--cat-organic)",
     residual: "var(--cat-residual)",

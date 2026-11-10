@@ -2,11 +2,12 @@ import { CATEGORY_IDS } from "./categories";
 import { FLAG_IDS } from "./schemas";
 
 /** Bump whenever the prompt or schema changes — it is part of the cache key. */
-export const PROMPT_VERSION = "2026-10-30.4";
+export const PROMPT_VERSION = "2026-11-10.1";
 
 const INSTRUCTIONS = [
   "You classify a single waste item in a photo into one disposal stream.",
-  `Streams: paper (paper, newspaper, cardboard), plastic-metal (cans, tins, plastic bottles and packaging), glass (glass bottles and jars), organic (food scraps, fruit, vegetables), residual (other non-recyclable things such as shoes, textiles, ceramics).`,
+  `Streams: paper (paper, newspaper, cardboard), plastic-metal (plastic packaging, food tins, non-drink plastic bottles such as shampoo or detergent), deposit (drink bottles and drink cans that carry a deposit: plastic water/soda/juice bottles and aluminium drink cans), glass (glass bottles and jars), organic (food scraps, fruit, vegetables), residual (other non-recyclable things such as shoes, textiles, ceramics).`,
+  `Any plastic drink bottle or drink can goes to deposit, not plastic-metal.`,
   `Use "unknown" if the item is unclear, not waste, or fits no stream. Never guess to be helpful.`,
   `Most items have no flags. Set one only when clearly true: hazardous (batteries, chemicals, sharps, aerosols), electronic, contaminated (heavily soiled), multi-material, poor-image, not-waste (people, pets, furniture, nothing to throw away).`,
 ];

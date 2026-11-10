@@ -2,6 +2,7 @@ import { ProviderError } from "../errors";
 import type { ProviderConfig, ProviderKind } from "../schemas";
 import { validateEndpoint } from "../security";
 import { AnthropicProvider } from "./anthropic";
+import { CLIP_ENDPOINT, CLIP_MODEL, ClipProvider } from "./clip";
 import { GeminiProvider } from "./gemini";
 import { MockProvider } from "./mock";
 import { OllamaProvider } from "./ollama";
@@ -22,6 +23,16 @@ export interface ProviderPreset {
 
 /** Adapter registry. UI components read from here instead of hardcoding provider logic. */
 export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
+  fast: {
+    kind: "clip",
+    label: "Fast · in this browser (free)",
+    location: "local",
+    defaultEndpoint: CLIP_ENDPOINT,
+    requiresKey: false,
+    declareCapabilities: false,
+    setupHint: "Sorts in well under a second, free and offline. Downloads a ~150 MB model once. Picks a bin; it doesn't name the exact item.",
+    defaults: { model: CLIP_MODEL, declaredImageInput: true, declaredStructuredOutput: true, timeoutMs: 180_000 },
+  },
   ollama: {
     kind: "ollama",
     label: "Ollama",
@@ -85,6 +96,7 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
 
 export function createProvider(config: ProviderConfig, ctx: ProviderFactoryContext): AIProvider {
   if (config.kind === "mock") return new MockProvider(config);
+  if (config.kind === "clip") return new ClipProvider(config, ctx.embedder, ctx.examples);
   const check = validateEndpoint(config.endpoint, config.location);
   if (!check.ok) throw new ProviderError("config", `${config.name}: ${check.reason}`);
   switch (config.kind) {

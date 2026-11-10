@@ -12,7 +12,7 @@ export const MOCK_MODEL = "sorte-demo-deterministic";
 export const MOCK_SCENARIOS: readonly (ModelOutput & { label: string })[] = [
   { label: "Clear glass jar", category: "glass", confidence: 0.94, material: "clear glass jar", reasoning: "Demo fixture: transparent rigid container with a screw thread.", flags: [], warnings: [] },
   { label: "Cardboard box", category: "paper", confidence: 0.91, material: "corrugated cardboard", reasoning: "Demo fixture: fluted brown fibreboard.", flags: [], warnings: [] },
-  { label: "Aluminium can", category: "plastic-metal", confidence: 0.88, material: "aluminium beverage can", reasoning: "Demo fixture: thin-walled metal can.", flags: [], warnings: [] },
+  { label: "Aluminium can", category: "deposit", confidence: 0.88, material: "aluminium drink can", reasoning: "Demo fixture: thin-walled drink can with a deposit.", flags: [], warnings: [] },
   { label: "Banana peel", category: "organic", confidence: 0.96, material: "fruit peel", reasoning: "Demo fixture: soft organic matter.", flags: [], warnings: [] },
   { label: "Crisp packet", category: "residual", confidence: 0.82, material: "metallised multi-layer film", reasoning: "Demo fixture: laminated film, not separable.", flags: ["multi-material"], warnings: [] },
   { label: "Ambiguous tub", category: "plastic-metal", confidence: 0.52, material: "possibly plastic tub", reasoning: "Demo fixture: low-confidence case to exercise review.", flags: [], warnings: ["Material unclear"] },

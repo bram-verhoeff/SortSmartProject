@@ -2,8 +2,8 @@ import { CATEGORY_IDS, type CategoryId } from "./categories";
 import type { RulesProfile } from "./schemas";
 
 export const DEFAULT_RULES: RulesProfile = {
-  id: "default-5",
-  name: "SORTÉ default (5 streams)",
+  id: "default-6",
+  name: "SORTÉ default (6 streams)",
   enabled: Object.fromEntries(CATEGORY_IDS.map((c) => [c, true])) as Record<CategoryId, boolean>,
   redirects: {},
   exceptionPolicy: "review",

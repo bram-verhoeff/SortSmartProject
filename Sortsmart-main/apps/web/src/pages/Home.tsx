@@ -2,7 +2,6 @@ import { CATEGORIES, type CategoryId } from "@sorte/core";
 import { CategoryGlyph, categoryColor, motionReduced } from "@sorte/ui";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { DownloadButtons } from "../components/Download";
 import { field } from "../gl/field";
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -45,7 +44,9 @@ export function Home() {
       <section className="last" id="get">
         <h2 className="rv">Get Sorte.</h2>
         <div className="rv">
-          <DownloadButtons />
+          <a className="btn btn--solid btn--lg" href="/app/">
+            Open the app
+          </a>
         </div>
       </section>
       <footer className="foot">
@@ -89,8 +90,8 @@ function Hero() {
         </h1>
         <p>A camera that knows where it goes.</p>
         <div className="hero__cta">
-          <a className="btn btn--solid btn--lg" href="#get">
-            Download
+          <a className="btn btn--solid btn--lg" href="/app/">
+            Open app
           </a>
           <a className="btn btn--lg" data-glass="clear" href="#streams">
             See how
@@ -101,7 +102,7 @@ function Hero() {
   );
 }
 
-const TUBE_LEVELS = [0.74, 0.58, 0.42, 0.66, 0.3];
+const TUBE_LEVELS = [0.74, 0.58, 0.5, 0.42, 0.66, 0.3];
 
 function Streams() {
   const [hover, setHover] = useState<CategoryId | null>(null);
@@ -125,7 +126,7 @@ function Streams() {
   const shown = CATEGORIES.find((c) => c.id === hover);
   return (
     <section className="streams" id="streams">
-      <h2 className="rv">Five streams.</h2>
+      <h2 className="rv">Six streams.</h2>
       <div className="tubes rv" ref={tubes}>
         {CATEGORIES.map((c, i) => (
           <div
@@ -160,7 +161,7 @@ function Streams() {
 
 const DEMO: { glyph: CategoryId; word: string; num: number; item: string }[] = [
   { glyph: "glass", word: "Glass", num: 94, item: "Clear jar" },
-  { glyph: "plastic-metal", word: "Plastic · Metal", num: 91, item: "Aluminium can" },
+  { glyph: "deposit", word: "Deposit", num: 91, item: "Drink can" },
   { glyph: "paper", word: "Paper", num: 88, item: "Cardboard" },
 ];
 
