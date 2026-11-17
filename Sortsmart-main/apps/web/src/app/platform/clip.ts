@@ -17,7 +17,9 @@ function transformers(): Promise<Transformers> {
     t.env.remoteHost = `${location.origin}/api/models/`;
     t.env.remotePathTemplate = "{model}/resolve/{revision}/";
     const wasm = (t.env.backends.onnx as { wasm?: { wasmPaths?: string } }).wasm;
-    if (wasm) wasm.wasmPaths = `${location.origin}/api/ort/`;
+    // The revision makes browsers drop copies cached without cross-origin isolation headers,
+    // which blocked the multi-threaded runtime. Raise it if those headers ever change again.
+    if (wasm) wasm.wasmPaths = `${location.origin}/api/ort/2/`;
     return t;
   });
   lib.catch(() => (lib = null));

@@ -12,8 +12,12 @@ type CameraStatus = "off" | "starting" | "on" | "denied" | "none" | "error";
 
 const SAMPLE_W = 48;
 const SAMPLE_H = 36;
-const SAMPLE_MS = 120;
+/** How often the camera picture is checked for an item. Cheap: 48×36 grey pixels. */
+const SAMPLE_MS = 80;
 const CLEAR_AFTER_EMPTY_MS = 600;
+/** Fast mode: extra frames per item, this far apart. */
+const EXTRA_VIEWS = 2;
+const VIEW_GAP_MS = 200;
 /** Camera frames are sent at most this big: plenty to recognise an item, and quicker to send. */
 const LIVE_MAX_EDGE = 768;
 /** Tries per item after a temporary failure such as a busy service. */
@@ -168,8 +172,23 @@ export function Live() {
       glass.setYielding(location === "local");
       const isLive = source instanceof HTMLVideoElement;
       try {
-        const { input, previewUrl } = await prepareImageSource(source, isLive ? Math.min(settings.imageMaxEdge, LIVE_MAX_EDGE) : settings.imageMaxEdge);
-        URL.revokeObjectURL(previewUrl);
+        const maxEdge = isLive ? Math.min(settings.imageMaxEdge, LIVE_MAX_EDGE) : settings.imageMaxEdge;
+        const first = await prepareImageSource(source, maxEdge);
+        URL.revokeObjectURL(first.previewUrl);
+        let input = first.input;
+        // Fast mode: a few more frames of the same item, averaged by the model, so one
+        // blurry frame doesn't pick the wrong bin. Kept short so a scan stays under ~3 s.
+        if (isLive && engine.plan(settings).providers[0]?.kind === "clip") {
+          const views = [];
+          for (let i = 0; i < EXTRA_VIEWS; i++) {
+            await new Promise((r) => setTimeout(r, VIEW_GAP_MS));
+            if (ac.signal.aborted) return;
+            const next = await prepareImageSource(source, maxEdge);
+            URL.revokeObjectURL(next.previewUrl);
+            views.push(next.input);
+          }
+          input = { ...input, views };
+        }
         const outcome = await engine.classify(input, ac.signal);
         app.bumpStats();
         if (ac.signal.aborted) return;

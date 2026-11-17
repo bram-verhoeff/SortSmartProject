@@ -79,9 +79,20 @@ async function modelFile(req: Request, res: Response): Promise<void> {
 
 export function createAssets() {
   const router = express.Router();
+  // The page is cross-origin isolated (so the model can use several CPU cores). The runtime's
+  // worker script must say so too, or the browser blocks it and the model falls back to one core.
+  // `npm start` sets these for every response; under `npm run dev` only this router does.
+  router.use((_req, res, next) => {
+    res.setHeader("cross-origin-embedder-policy", "require-corp");
+    res.setHeader("cross-origin-opener-policy", "same-origin");
+    res.setHeader("cross-origin-resource-policy", "same-origin");
+    next();
+  });
   router.get(/^\/models\//, (req, res, next) => void modelFile(req, res).catch(next));
-  router.get("/ort/:file", (req, res) => {
-    const file = req.params.file;
+  // /ort/<file> or /ort/<revision>/<file>. The app asks for a revision, so a browser that cached
+  // these files before they had the isolation headers fetches them fresh.
+  router.get(/^\/ort\/(?:\d+\/)?([\w.-]+)$/, (req, res) => {
+    const file = (req.params as Record<string, string>)[0] ?? "";
     if (!/^ort-wasm[\w.-]*\.(?:wasm|mjs)$/.test(file) || !existsSync(join(ORT_DIR, file))) return void res.status(404).end();
     res.setHeader("cache-control", "public, max-age=86400");
     res.type(typeOf(file)).sendFile(join(ORT_DIR, file));

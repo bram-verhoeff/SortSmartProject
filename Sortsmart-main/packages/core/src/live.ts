@@ -54,8 +54,9 @@ export class SceneDetector {
   constructor(opts: SceneDetectorOptions = {}) {
     this.motion = opts.motionThreshold ?? 0.06;
     this.change = opts.changeThreshold ?? 0.05;
-    this.stableMs = opts.stableMs ?? 350;
-    this.maxWait = opts.maxWaitMs ?? 1500;
+    // Long enough for a sharp, settled picture; short enough that a scan stays under ~3 s.
+    this.stableMs = opts.stableMs ?? 600;
+    this.maxWait = opts.maxWaitMs ?? 1100;
     this.tolerance = opts.pixelTolerance ?? 14;
   }
 

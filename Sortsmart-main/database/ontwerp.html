@@ -1,0 +1,582 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SortSmart Database-ontwerp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: één leeskolom met brede, horizontaal scrollbare vlakken voor diagram en tabellen. Kleuren ontleend aan de afvalfracties. */
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --fg: #1b211d;
+  --muted: #5d665f;
+  --line: #d9ddd8;
+  --line-strong: #39433c;
+  --hdr: #e3efe5;
+  --accent: #2f7d4a;
+  --papier: #1e63b5;
+  --pmd: #d87a00;
+  --rest: #6a6f6b;
+  --gft: #3c8d2f;
+  --pk: #2f7d4a;
+  --fk: #b8620a;
+  --code-bg: #eef1ed;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1a201c; --fg: #e4e9e4; --muted: #9aa59d; --line: #2e3631; --line-strong: #a9b5ac;
+  --hdr: #213328; --accent: #6cc58b; --papier: #6aa5ec; --pmd: #f0a13d; --rest: #a3a8a4; --gft: #7cc96e;
+  --pk: #6cc58b; --fk: #f0a13d; --code-bg: #0e1210; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1a201c; --fg: #e4e9e4; --muted: #9aa59d; --line: #2e3631; --line-strong: #a9b5ac;
+  --hdr: #213328; --accent: #6cc58b; --papier: #6aa5ec; --pmd: #f0a13d; --rest: #a3a8a4; --gft: #7cc96e;
+  --pk: #6cc58b; --fk: #f0a13d; --code-bg: #0e1210; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 24px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; letter-spacing: 0.02em; }
+p { margin: 0; }
+.prose { max-width: 68ch; color: var(--fg); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--f-mono); }
+.small { font-size: 12px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
+
+.stream { display: flex; height: 6px; border-radius: 3px; overflow: hidden; width: 180px; }
+.stream span { flex: 1; } .s1 { background: var(--papier) } .s2 { background: var(--pmd) } .s3 { background: var(--rest) } .s4 { background: var(--gft) }
+
+header.top { display: grid; gap: 14px; margin-bottom: 36px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+nav.toc a { font-size: 13px; color: var(--fg); text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px; }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+
+section { display: grid; gap: 16px; padding-block: 36px; border-top: 1px solid var(--line); }
+.sec-head { display: grid; gap: 6px; }
+
+.assume { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.assume div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+.assume strong { display: block; font-family: var(--f-display); font-weight: 600; margin-bottom: 4px; }
+.assume p { font-size: 14px; color: var(--muted); }
+
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.diagram-frame { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+svg.diagram { display: block; max-width: none; }
+svg.diagram .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.3; }
+svg.diagram .ebox { fill: var(--bg); stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 0; }
+svg.diagram .hdr { fill: var(--hdr); stroke: none; }
+svg.diagram .sep { stroke: var(--line-strong); stroke-width: 1; }
+svg.diagram .cname { font: 600 14px var(--f-display); fill: var(--fg); }
+svg.diagram .stereo { font: 400 11px var(--f-mono); fill: var(--muted); }
+svg.diagram .attr { font: 400 12px var(--f-mono); fill: var(--fg); }
+svg.diagram .assoc { fill: none; stroke: var(--line-strong); stroke-width: 1.3; }
+svg.diagram .diamond { fill: var(--line-strong); stroke: var(--line-strong); }
+svg.diagram .mult { font: 500 12px var(--f-mono); fill: var(--accent); }
+svg.diagram .aname { font: italic 400 12px var(--f-body); fill: var(--muted); }
+
+.read { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 32px; padding: 0; margin: 0; list-style: none; font-size: 14px; }
+.read li { padding: 6px 0; border-bottom: 1px dashed var(--line); min-width: 0; }
+.read b { font-family: var(--f-mono); font-weight: 500; color: var(--accent); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.rules div { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; min-width: 0; }
+.rules strong { font-family: var(--f-display); font-weight: 600; display: block; }
+.rules p { font-size: 14px; color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--muted); }
+.pk { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: var(--pk); font-weight: 600; }
+.fk { font-style: italic; color: var(--fk); }
+.pk.fk { color: var(--fk); }
+.fk::after { content: "#"; font-size: 0.8em; vertical-align: super; margin-left: 1px; }
+.rrm { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 20px; }
+.rrm-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.rrm-row:last-child { border-bottom: 0; }
+.rrm-line { font-family: var(--f-mono); font-size: 13.5px; overflow-wrap: anywhere; }
+.rrm-line strong { font-family: var(--f-display); font-size: 15px; letter-spacing: 0.02em; }
+.rrm-fk { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+
+.rim-grid { display: grid; gap: 16px; }
+.rim-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.rim-card header { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 14px 16px 8px; }
+.rim-card h3 { font-family: var(--f-mono); font-size: 15px; font-weight: 500; color: var(--accent); }
+.rim-card header p { font-size: 13px; color: var(--muted); }
+table.rim { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
+table.rim th { text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 6px 16px; border-bottom: 1px solid var(--line); }
+table.rim td { padding: 6px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.rim td.mono { font-size: 12.5px; }
+.key { display: inline-block; font: 500 10.5px var(--f-mono); padding: 1px 6px; border-radius: 3px; margin-right: 3px; border: 1px solid; }
+.kpk { color: var(--pk); border-color: var(--pk); }
+.kfk { color: var(--fk); border-color: var(--fk); }
+.kuq { color: var(--muted); border-color: var(--line-strong); }
+ul.cons { list-style: none; margin: 0; padding: 10px 16px 14px; display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+ul.cons .mono { color: var(--fg); margin-right: 6px; font-size: 12px; }
+ul.cons li { overflow-wrap: anywhere; }
+
+.code-wrap { position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; }
+.code-wrap pre { margin: 0; padding: 16px; max-height: 520px; overflow: auto; font: 12.5px/1.55 var(--f-mono); color: var(--fg); }
+.copy { position: absolute; top: 10px; right: 10px; font: 500 12px var(--f-body); background: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.copy:hover, .copy:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+
+.choices { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; max-width: 80ch; }
+.choices li { padding-left: 18px; position: relative; }
+.choices li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="stream" aria-hidden="true"><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span></div>
+  <p class="eyebrow">The Challenge · SDG 12 · Databases</p>
+  <h1>SortSmart database-ontwerp</h1>
+  <p class="prose muted">Welke informatie moet SortSmart opslaan, en hoe? Van conceptueel klassendiagram via het relationeel representatiemodel naar een implementatiemodel in MySQL. Team: Bram, Houssam, Mohmad, Diese en Daniyal.</p>
+  <nav class="toc" aria-label="Inhoud">
+    <a href="#uitgangspunten">Uitgangspunten</a><a href="#klassendiagram">Klassendiagram</a><a href="#rrm">Representatiemodel</a><a href="#rim">Implementatiemodel</a><a href="#sql">SQL-script</a><a href="#keuzes">Ontwerpkeuzes</a>
+  </nav>
+</header>
+
+<section id="uitgangspunten">
+  <div class="sec-head"><p class="eyebrow">Stap 0</p><h2>Welke informatie moet erin?</h2></div>
+  <p class="prose">Uit het concept volgt dat de database vier soorten informatie moet bijhouden: <b>waar</b> de stations staan, <b>hoe ze zijn opgebouwd</b> (vakken per afvalfractie), <b>wat er gebeurt</b> bij het weggooien (scans en foutmeldingen zoals vloeistof of meerdere items), en <b>het beheer</b> (vulgraad, meldingen en legingen door facilitair en schoonmaak).</p>
+  <div class="assume">
+    <div><strong>Gebruikers blijven anoniem</strong><p>Studenten moeten binnen 5 seconden hun afval kwijt. Er is geen login en er worden geen persoonsgegevens van gebruikers opgeslagen (AVG).</p></div>
+    <div><strong>Vier vakken per station</strong><p>Papier, PMD, Rest en Etensresten, zoals in het mechanisch ontwerp. Elke fractie komt per station maar één keer voor.</p></div>
+    <div><strong>Vulgraad wordt gemeten</strong><p>We gaan ervan uit dat elk vak een afstandssensor heeft die de vulgraad doorgeeft. Boven een drempel ontstaat een melding.</p></div>
+    <div><strong>Data voor Facilitair</strong><p>Scans en legingen laten zien hoeveel er goed gescheiden wordt. Daarmee kan Facilitair aantonen dat de afvalstromen schoon blijven.</p></div>
+  </div>
+</section>
+
+<section id="klassendiagram">
+  <div class="sec-head"><p class="eyebrow">Stap 1 · conceptueel</p><h2>Klassendiagram</h2></div>
+  <p class="prose">Het klassendiagram beschrijft de werkelijkheid zonder technische sleutels: alleen klassen, attributen met datatype, associaties en multipliciteiten. <span class="mono">[0..1]</span> achter een attribuut betekent dat het niet verplicht is. De gevulde ruit tussen SorteerStation en Vak is een compositie: een vak bestaat niet zonder zijn station.</p>
+  <div class="diagram-frame scroll"><svg viewBox="0 0 1300 828" width="1300" height="828" role="img" aria-label="Klassendiagram SortSmart" class="diagram"><path class="assoc" d="M260,70 L360,70"/>
+<text class="mult" x="270" y="62" text-anchor="start">1</text>
+<text class="mult" x="352" y="62" text-anchor="end">0..*</text>
+<text class="aname" x="310" y="86" text-anchor="middle">heeft</text>
+<path class="assoc" d="M600,70 L700,70"/>
+<text class="mult" x="610" y="62" text-anchor="start">1</text>
+<text class="mult" x="692" y="62" text-anchor="end">0..*</text>
+<text class="aname" x="650" y="86" text-anchor="middle">registreert</text>
+<path class="assoc" d="M940,70 L1040,70"/>
+<text class="mult" x="950" y="62" text-anchor="start">0..*</text>
+<text class="mult" x="1032" y="62" text-anchor="end">0..1</text>
+<text class="aname" x="990" y="86" text-anchor="middle">herkent als</text>
+<path class="assoc" d="M1160,102 L1160,310 L940,310"/>
+<text class="mult" x="1168" y="118" text-anchor="start">0..*</text>
+<text class="mult" x="950" y="302" text-anchor="start">1</text>
+<text class="aname" x="1050" y="302" text-anchor="middle">hoort bij</text>
+<path class="assoc" d="M480,192 L480,260"/>
+<path class="diamond" d="M480,174 L486,183 L480,192 L474,183 Z"/>
+<text class="mult" x="492" y="190" text-anchor="start">1</text>
+<text class="mult" x="488" y="252" text-anchor="start">1..4</text>
+<text class="aname" x="472" y="229.0" text-anchor="end">bestaat uit</text>
+<path class="assoc" d="M600,310 L700,310"/>
+<text class="mult" x="610" y="302" text-anchor="start">0..*</text>
+<text class="mult" x="692" y="302" text-anchor="end">1</text>
+<text class="aname" x="650" y="326" text-anchor="middle">is voor</text>
+<path class="assoc" d="M400,174 L400,225 L140,225 L140,260"/>
+<text class="mult" x="392" y="190" text-anchor="end">1</text>
+<text class="mult" x="148" y="252" text-anchor="start">0..*</text>
+<text class="aname" x="270" y="218" text-anchor="middle">genereert</text>
+<path class="assoc" d="M360,340 L260,340"/>
+<text class="mult" x="352" y="332" text-anchor="end">0..1</text>
+<text class="mult" x="268" y="332" text-anchor="start">0..*</text>
+<text class="aname" x="310" y="356" text-anchor="middle">betreft</text>
+<path class="assoc" d="M140,396 L140,500"/>
+<text class="mult" x="148" y="412" text-anchor="start">0..*</text>
+<text class="mult" x="148" y="492" text-anchor="start">0..1</text>
+<text class="aname" x="132" y="452.0" text-anchor="end">handelt af</text>
+<path class="assoc" d="M480,360 L480,500"/>
+<text class="mult" x="488" y="376" text-anchor="start">1</text>
+<text class="mult" x="488" y="492" text-anchor="start">0..*</text>
+<text class="aname" x="472" y="434.0" text-anchor="end">wordt geleegd</text>
+<path class="assoc" d="M260,560 L360,560"/>
+<text class="mult" x="270" y="552" text-anchor="start">1</text>
+<text class="mult" x="352" y="552" text-anchor="end">0..*</text>
+<text class="aname" x="310" y="576" text-anchor="middle">voert uit</text><g class="cls"><rect class="box" x="20" y="20" width="240" height="118" rx="3"/>
+<rect class="hdr" x="20" y="20" width="240" height="30" rx="3"/>
+<rect class="hdr" x="20" y="46" width="240" height="4"/>
+<line class="sep" x1="20" y1="50" x2="260" y2="50"/>
+<text class="cname" x="140.0" y="40" text-anchor="middle">Campus</text>
+<text class="attr" x="30" y="71">naam: String</text>
+<text class="attr" x="30" y="89">adres: String</text>
+<text class="attr" x="30" y="107">postcode: String</text>
+<text class="attr" x="30" y="125">plaats: String</text>
+</g>
+<g class="cls"><rect class="box" x="360" y="20" width="240" height="154" rx="3"/>
+<rect class="hdr" x="360" y="20" width="240" height="30" rx="3"/>
+<rect class="hdr" x="360" y="46" width="240" height="4"/>
+<line class="sep" x1="360" y1="50" x2="600" y2="50"/>
+<text class="cname" x="480.0" y="40" text-anchor="middle">SorteerStation</text>
+<text class="attr" x="370" y="71">serienummer: String</text>
+<text class="attr" x="370" y="89">locatieOmschrijving: String</text>
+<text class="attr" x="370" y="107">verdieping: Integer [0..1]</text>
+<text class="attr" x="370" y="125">installatiedatum: Date</text>
+<text class="attr" x="370" y="143">firmwareVersie: String</text>
+<text class="attr" x="370" y="161">status: StationStatus</text>
+</g>
+<g class="cls"><rect class="box" x="700" y="20" width="240" height="100" rx="3"/>
+<rect class="hdr" x="700" y="20" width="240" height="30" rx="3"/>
+<rect class="hdr" x="700" y="46" width="240" height="4"/>
+<line class="sep" x1="700" y1="50" x2="940" y2="50"/>
+<text class="cname" x="820.0" y="40" text-anchor="middle">Scan</text>
+<text class="attr" x="710" y="71">tijdstip: DateTime</text>
+<text class="attr" x="710" y="89">betrouwbaarheid: Decimal [0..1]</text>
+<text class="attr" x="710" y="107">resultaat: ScanResultaat</text>
+</g>
+<g class="cls"><rect class="box" x="1040" y="20" width="240" height="82" rx="3"/>
+<rect class="hdr" x="1040" y="20" width="240" height="30" rx="3"/>
+<rect class="hdr" x="1040" y="46" width="240" height="4"/>
+<line class="sep" x1="1040" y1="50" x2="1280" y2="50"/>
+<text class="cname" x="1160.0" y="40" text-anchor="middle">ItemType</text>
+<text class="attr" x="1050" y="71">naam: String</text>
+<text class="attr" x="1050" y="89">materiaal: String</text>
+</g>
+<g class="cls"><rect class="box" x="20" y="260" width="240" height="136" rx="3"/>
+<rect class="hdr" x="20" y="260" width="240" height="30" rx="3"/>
+<rect class="hdr" x="20" y="286" width="240" height="4"/>
+<line class="sep" x1="20" y1="290" x2="260" y2="290"/>
+<text class="cname" x="140.0" y="280" text-anchor="middle">Melding</text>
+<text class="attr" x="30" y="311">tijdstipGemeld: DateTime</text>
+<text class="attr" x="30" y="329">type: MeldingType</text>
+<text class="attr" x="30" y="347">omschrijving: String [0..1]</text>
+<text class="attr" x="30" y="365">status: MeldingStatus</text>
+<text class="attr" x="30" y="383">afgehandeldOp: DateTime [0..1]</text>
+</g>
+<g class="cls"><rect class="box" x="360" y="260" width="240" height="100" rx="3"/>
+<rect class="hdr" x="360" y="260" width="240" height="30" rx="3"/>
+<rect class="hdr" x="360" y="286" width="240" height="4"/>
+<line class="sep" x1="360" y1="290" x2="600" y2="290"/>
+<text class="cname" x="480.0" y="280" text-anchor="middle">Vak</text>
+<text class="attr" x="370" y="311">vaknummer: Integer</text>
+<text class="attr" x="370" y="329">capaciteitLiter: Integer</text>
+<text class="attr" x="370" y="347">vulgraadProcent: Integer</text>
+</g>
+<g class="cls"><rect class="box" x="700" y="260" width="240" height="100" rx="3"/>
+<rect class="hdr" x="700" y="260" width="240" height="30" rx="3"/>
+<rect class="hdr" x="700" y="286" width="240" height="4"/>
+<line class="sep" x1="700" y1="290" x2="940" y2="290"/>
+<text class="cname" x="820.0" y="280" text-anchor="middle">Afvalfractie</text>
+<text class="attr" x="710" y="311">naam: String</text>
+<text class="attr" x="710" y="329">kleurcode: String</text>
+<text class="attr" x="710" y="347">omschrijving: String [0..1]</text>
+</g>
+<g class="cls"><rect class="box" x="20" y="500" width="240" height="136" rx="3"/>
+<rect class="hdr" x="20" y="500" width="240" height="30" rx="3"/>
+<rect class="hdr" x="20" y="526" width="240" height="4"/>
+<line class="sep" x1="20" y1="530" x2="260" y2="530"/>
+<text class="cname" x="140.0" y="520" text-anchor="middle">Medewerker</text>
+<text class="attr" x="30" y="551">voornaam: String</text>
+<text class="attr" x="30" y="569">tussenvoegsel: String [0..1]</text>
+<text class="attr" x="30" y="587">achternaam: String</text>
+<text class="attr" x="30" y="605">email: String</text>
+<text class="attr" x="30" y="623">rol: Rol</text>
+</g>
+<g class="cls"><rect class="box" x="360" y="500" width="240" height="100" rx="3"/>
+<rect class="hdr" x="360" y="500" width="240" height="30" rx="3"/>
+<rect class="hdr" x="360" y="526" width="240" height="4"/>
+<line class="sep" x1="360" y1="530" x2="600" y2="530"/>
+<text class="cname" x="480.0" y="520" text-anchor="middle">Leging</text>
+<text class="attr" x="370" y="551">tijdstip: DateTime</text>
+<text class="attr" x="370" y="569">vulgraadVoorLeging: Integer</text>
+<text class="attr" x="370" y="587">gewichtKg: Decimal [0..1]</text>
+</g><g><rect class="ebox" x="20" y="680" width="232" height="128" rx="3"/><text class="stereo" x="136.0" y="697" text-anchor="middle">«enumeration»</text><text class="cname" x="136.0" y="715" text-anchor="middle">StationStatus</text><line class="sep" x1="20" y1="724" x2="252" y2="724"/><text class="attr" x="30" y="743">Actief</text><text class="attr" x="30" y="761">Onderhoud</text><text class="attr" x="30" y="779">Storing</text><text class="attr" x="30" y="797">Inactief</text></g>
+<g><rect class="ebox" x="272" y="680" width="232" height="128" rx="3"/><text class="stereo" x="388.0" y="697" text-anchor="middle">«enumeration»</text><text class="cname" x="388.0" y="715" text-anchor="middle">ScanResultaat</text><line class="sep" x1="272" y1="724" x2="504" y2="724"/><text class="attr" x="282" y="743">Gesorteerd</text><text class="attr" x="282" y="761">MeerdereItems</text><text class="attr" x="282" y="779">VloeistofGedetecteerd</text><text class="attr" x="282" y="797">NietHerkend</text></g>
+<g><rect class="ebox" x="524" y="680" width="232" height="128" rx="3"/><text class="stereo" x="640.0" y="697" text-anchor="middle">«enumeration»</text><text class="cname" x="640.0" y="715" text-anchor="middle">MeldingType</text><line class="sep" x1="524" y1="724" x2="756" y2="724"/><text class="attr" x="534" y="743">VakVol</text><text class="attr" x="534" y="761">SensorStoring</text><text class="attr" x="534" y="779">ServoStoring</text><text class="attr" x="534" y="797">Offline</text></g>
+<g><rect class="ebox" x="776" y="680" width="232" height="110" rx="3"/><text class="stereo" x="892.0" y="697" text-anchor="middle">«enumeration»</text><text class="cname" x="892.0" y="715" text-anchor="middle">MeldingStatus</text><line class="sep" x1="776" y1="724" x2="1008" y2="724"/><text class="attr" x="786" y="743">Open</text><text class="attr" x="786" y="761">InBehandeling</text><text class="attr" x="786" y="779">Afgehandeld</text></g>
+<g><rect class="ebox" x="1028" y="680" width="232" height="110" rx="3"/><text class="stereo" x="1144.0" y="697" text-anchor="middle">«enumeration»</text><text class="cname" x="1144.0" y="715" text-anchor="middle">Rol</text><line class="sep" x1="1028" y1="724" x2="1260" y2="724"/><text class="attr" x="1038" y="743">Facilitair</text><text class="attr" x="1038" y="761">Schoonmaak</text><text class="attr" x="1038" y="779">Beheerder</text></g></svg></div>
+  <ul class="read" aria-label="Associaties in woorden">
+    <li>Een campus heeft <b>0..*</b> stations; een station staat op precies <b>1</b> campus.</li>
+    <li>Een station bestaat uit <b>1..4</b> vakken; een vak hoort bij precies <b>1</b> station.</li>
+    <li>Een vak is voor precies <b>1</b> afvalfractie; een fractie komt voor in <b>0..*</b> vakken.</li>
+    <li>Een itemtype hoort bij precies <b>1</b> fractie; een fractie heeft <b>0..*</b> itemtypes.</li>
+    <li>Een station registreert <b>0..*</b> scans; een scan hoort bij <b>1</b> station.</li>
+    <li>Een scan herkent <b>0..1</b> itemtype (niets bij meerdere items of niet herkend).</li>
+    <li>Een station genereert <b>0..*</b> meldingen; een melding betreft <b>0..1</b> vak.</li>
+    <li>Een melding wordt door <b>0..1</b> medewerker afgehandeld.</li>
+    <li>Een vak wordt <b>0..*</b> keer geleegd; elke leging wordt door <b>1</b> medewerker uitgevoerd.</li>
+  </ul>
+</section>
+
+<section id="rrm">
+  <div class="sec-head"><p class="eyebrow">Stap 2 · logisch</p><h2>Relationeel representatiemodel</h2></div>
+  <p class="prose">Elke klasse wordt een tabel. We voegen primaire sleutels toe en zetten de associaties om naar vreemde sleutels. Daarbij gelden deze regels:</p>
+  <div class="rules">
+    <div><strong>1-op-veel</strong><p>De vreemde sleutel komt aan de veel-kant. Voorbeeld: <span class="mono">campus_id</span> in SORTEERSTATION.</p></div>
+    <div><strong>Compositie</strong><p>VAK is een zwakke entiteit. De sleutel van het station wordt deel van de primaire sleutel: (<span class="mono">station_id</span>, <span class="mono">vaknummer</span>).</p></div>
+    <div><strong>Optioneel (0..1)</strong><p>De vreemde sleutel mag leeg zijn, zoals <span class="mono">itemtype_id</span> in SCAN en <span class="mono">afgehandeld_door</span> in MELDING.</p></div>
+    <div><strong>Enumeraties</strong><p>Een vaste lijst waarden wordt geen tabel maar een kolom met een CHECK-constraint. Afvalfractie heeft eigen attributen en wordt daarom wel een tabel.</p></div>
+  </div>
+  <div class="legend"><span><span class="pk">onderstreept</span> = primaire sleutel</span><span><span class="fk">cursief</span> = vreemde sleutel</span></div>
+  <div class="rrm"><div class="rrm-row"><p class="rrm-line"><strong>CAMPUS</strong> (<span class="pk">campus_id</span>, naam, adres, postcode, plaats)</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>SORTEERSTATION</strong> (<span class="pk">station_id</span>, <span class="fk">campus_id</span>, serienummer, locatie_omschrijving, verdieping, installatiedatum, firmware_versie, status)</p><p class="rrm-fk">FK campus_id → CAMPUS</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>AFVALFRACTIE</strong> (<span class="pk">fractie_id</span>, naam, kleurcode, omschrijving)</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>VAK</strong> (<span class="pk fk">station_id</span>, <span class="pk">vaknummer</span>, <span class="fk">fractie_id</span>, capaciteit_liter, vulgraad_procent)</p><p class="rrm-fk">FK station_id → SORTEERSTATION · FK fractie_id → AFVALFRACTIE</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>ITEMTYPE</strong> (<span class="pk">itemtype_id</span>, <span class="fk">fractie_id</span>, naam, materiaal)</p><p class="rrm-fk">FK fractie_id → AFVALFRACTIE</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>SCAN</strong> (<span class="pk">scan_id</span>, <span class="fk">station_id</span>, <span class="fk">itemtype_id</span>, tijdstip, betrouwbaarheid, resultaat)</p><p class="rrm-fk">FK station_id → SORTEERSTATION · FK itemtype_id → ITEMTYPE</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>MEDEWERKER</strong> (<span class="pk">medewerker_id</span>, voornaam, tussenvoegsel, achternaam, email, rol)</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>LEGING</strong> (<span class="pk">leging_id</span>, <span class="fk">station_id</span>, <span class="fk">vaknummer</span>, <span class="fk">medewerker_id</span>, tijdstip, vulgraad_voor_leging, gewicht_kg)</p><p class="rrm-fk">FK (station_id, vaknummer) → VAK · FK medewerker_id → MEDEWERKER</p></div>
+<div class="rrm-row"><p class="rrm-line"><strong>MELDING</strong> (<span class="pk">melding_id</span>, <span class="fk">station_id</span>, <span class="fk">vaknummer</span>, <span class="fk">afgehandeld_door</span>, type, omschrijving, tijdstip_gemeld, status, afgehandeld_op)</p><p class="rrm-fk">FK station_id → SORTEERSTATION · FK (station_id, vaknummer) → VAK · FK afgehandeld_door → MEDEWERKER</p></div></div>
+</section>
+
+<section id="rim">
+  <div class="sec-head"><p class="eyebrow">Stap 3 · fysiek</p><h2>Relationeel implementatiemodel</h2></div>
+  <p class="prose">Per tabel de kolommen met datatype (MySQL 8), of NULL is toegestaan, de sleutels en de constraints. ID's krijgen <span class="mono">AUTO_INCREMENT</span>. SCAN gebruikt <span class="mono">BIGINT</span>, omdat daar per station duizenden rijen per week bij komen.</p>
+  <div class="rim-grid"><article class="rim-card" id="t-campus"><header><h3>campus</h3><p>Campus waar SortSmart-stations staan</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">campus_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">naam</td><td class="mono">VARCHAR(100)</td><td>Nee</td><td><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">adres</td><td class="mono">VARCHAR(150)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">postcode</td><td class="mono">CHAR(6)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">plaats</td><td class="mono">VARCHAR(80)</td><td>Nee</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_campus_naam</span> UNIQUE (naam)</li><li><span class="mono">ck_campus_postcode</span> CHECK (postcode REGEXP &#x27;^[1-9][0-9]{3}[A-Z]{2}$&#x27;)</li></ul></article>
+<article class="rim-card" id="t-sorteerstation"><header><h3>sorteerstation</h3><p>Eén SortSmart-module bovenop een afvalbak</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">station_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">campus_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">serienummer</td><td class="mono">VARCHAR(30)</td><td>Nee</td><td><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">locatie_omschrijving</td><td class="mono">VARCHAR(150)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">verdieping</td><td class="mono">TINYINT</td><td>Ja</td><td></td><td class="mono small"></td></tr><tr><td class="mono">installatiedatum</td><td class="mono">DATE</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">firmware_versie</td><td class="mono">VARCHAR(20)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">status</td><td class="mono">VARCHAR(10)</td><td>Nee</td><td></td><td class="mono small">DEFAULT &#x27;Actief&#x27;</td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_station_serienummer</span> UNIQUE (serienummer)</li><li><span class="mono">fk_station_campus</span> FK (campus_id) → campus (campus_id) ON UPDATE CASCADE ON DELETE RESTRICT</li><li><span class="mono">ck_station_status</span> CHECK (status IN (&#x27;Actief&#x27;,&#x27;Onderhoud&#x27;,&#x27;Storing&#x27;,&#x27;Inactief&#x27;))</li></ul></article>
+<article class="rim-card" id="t-afvalfractie"><header><h3>afvalfractie</h3><p>Afvalstroom: Papier, PMD, Rest, Etensresten</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">fractie_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">naam</td><td class="mono">VARCHAR(30)</td><td>Nee</td><td><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">kleurcode</td><td class="mono">CHAR(7)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">omschrijving</td><td class="mono">VARCHAR(255)</td><td>Ja</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_fractie_naam</span> UNIQUE (naam)</li><li><span class="mono">ck_fractie_kleur</span> CHECK (kleurcode REGEXP &#x27;^#[0-9A-Fa-f]{6}$&#x27;)</li></ul></article>
+<article class="rim-card" id="t-vak"><header><h3>vak</h3><p>Vak (zak/container) binnen een station – zwakke entiteit</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">station_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span><span class='key kfk'>FK</span><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">vaknummer</td><td class="mono">TINYINT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small"></td></tr><tr><td class="mono">fractie_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">capaciteit_liter</td><td class="mono">SMALLINT</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">vulgraad_procent</td><td class="mono">TINYINT</td><td>Nee</td><td></td><td class="mono small">DEFAULT 0</td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_vak_station_fractie</span> UNIQUE (station_id, fractie_id)</li><li><span class="mono">fk_vak_station</span> FK (station_id) → sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE</li><li><span class="mono">fk_vak_fractie</span> FK (fractie_id) → afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT</li><li><span class="mono">ck_vak_nummer</span> CHECK (vaknummer BETWEEN 1 AND 4)</li><li><span class="mono">ck_vak_capaciteit</span> CHECK (capaciteit_liter &gt; 0)</li><li><span class="mono">ck_vak_vulgraad</span> CHECK (vulgraad_procent BETWEEN 0 AND 100)</li></ul></article>
+<article class="rim-card" id="t-itemtype"><header><h3>itemtype</h3><p>Soort item dat de sensor kan herkennen (blikje, koffiebeker, ...)</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">itemtype_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">fractie_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">naam</td><td class="mono">VARCHAR(60)</td><td>Nee</td><td><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">materiaal</td><td class="mono">VARCHAR(40)</td><td>Nee</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_itemtype_naam</span> UNIQUE (naam)</li><li><span class="mono">fk_itemtype_fractie</span> FK (fractie_id) → afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT</li></ul></article>
+<article class="rim-card" id="t-scan"><header><h3>scan</h3><p>Elke keer dat iemand iets boven het scanplatform houdt</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">scan_id</td><td class="mono">BIGINT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">station_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">itemtype_id</td><td class="mono">INT</td><td>Ja</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">tijdstip</td><td class="mono">DATETIME</td><td>Nee</td><td></td><td class="mono small">DEFAULT CURRENT_TIMESTAMP</td></tr><tr><td class="mono">betrouwbaarheid</td><td class="mono">DECIMAL(5,2)</td><td>Ja</td><td></td><td class="mono small"></td></tr><tr><td class="mono">resultaat</td><td class="mono">VARCHAR(25)</td><td>Nee</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">fk_scan_station</span> FK (station_id) → sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE</li><li><span class="mono">fk_scan_itemtype</span> FK (itemtype_id) → itemtype (itemtype_id) <em>(geen ON DELETE/UPDATE-actie: MySQL staat dat niet toe op een kolom in een CHECK)</em></li><li><span class="mono">ck_scan_resultaat</span> CHECK (resultaat IN (&#x27;Gesorteerd&#x27;,&#x27;MeerdereItems&#x27;,&#x27;VloeistofGedetecteerd&#x27;,&#x27;NietHerkend&#x27;))</li><li><span class="mono">ck_scan_betrouwbaarheid</span> CHECK (betrouwbaarheid BETWEEN 0 AND 100)</li><li><span class="mono">ck_scan_gesorteerd</span> CHECK (resultaat &lt;&gt; &#x27;Gesorteerd&#x27; OR itemtype_id IS NOT NULL) <em>(een gesorteerd item moet herkend zijn)</em></li></ul></article>
+<article class="rim-card" id="t-medewerker"><header><h3>medewerker</h3><p>Facilitair-, schoonmaak- of beheermedewerker</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">medewerker_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">voornaam</td><td class="mono">VARCHAR(50)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">tussenvoegsel</td><td class="mono">VARCHAR(15)</td><td>Ja</td><td></td><td class="mono small"></td></tr><tr><td class="mono">achternaam</td><td class="mono">VARCHAR(80)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">email</td><td class="mono">VARCHAR(150)</td><td>Nee</td><td><span class='key kuq'>UQ</span></td><td class="mono small"></td></tr><tr><td class="mono">rol</td><td class="mono">VARCHAR(12)</td><td>Nee</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">uq_medewerker_email</span> UNIQUE (email)</li><li><span class="mono">ck_medewerker_rol</span> CHECK (rol IN (&#x27;Facilitair&#x27;,&#x27;Schoonmaak&#x27;,&#x27;Beheerder&#x27;))</li></ul></article>
+<article class="rim-card" id="t-leging"><header><h3>leging</h3><p>Het legen van een vak door een medewerker</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">leging_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">station_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">vaknummer</td><td class="mono">TINYINT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">medewerker_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">tijdstip</td><td class="mono">DATETIME</td><td>Nee</td><td></td><td class="mono small">DEFAULT CURRENT_TIMESTAMP</td></tr><tr><td class="mono">vulgraad_voor_leging</td><td class="mono">TINYINT</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">gewicht_kg</td><td class="mono">DECIMAL(5,2)</td><td>Ja</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">fk_leging_vak</span> FK (station_id, vaknummer) → vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE</li><li><span class="mono">fk_leging_medewerker</span> FK (medewerker_id) → medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE RESTRICT</li><li><span class="mono">ck_leging_vulgraad</span> CHECK (vulgraad_voor_leging BETWEEN 0 AND 100)</li><li><span class="mono">ck_leging_gewicht</span> CHECK (gewicht_kg &gt;= 0)</li></ul></article>
+<article class="rim-card" id="t-melding"><header><h3>melding</h3><p>Melding van een station (vak vol, storing, offline)</p></header><div class="scroll"><table class="rim"><thead><tr><th>Kolom</th><th>Datatype</th><th>NULL</th><th>Sleutel</th><th>Default / extra</th></tr></thead><tbody><tr><td class="mono">melding_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kpk'>PK</span></td><td class="mono small">AUTO_INCREMENT</td></tr><tr><td class="mono">station_id</td><td class="mono">INT</td><td>Nee</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">vaknummer</td><td class="mono">TINYINT</td><td>Ja</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">afgehandeld_door</td><td class="mono">INT</td><td>Ja</td><td><span class='key kfk'>FK</span></td><td class="mono small"></td></tr><tr><td class="mono">type</td><td class="mono">VARCHAR(15)</td><td>Nee</td><td></td><td class="mono small"></td></tr><tr><td class="mono">omschrijving</td><td class="mono">VARCHAR(255)</td><td>Ja</td><td></td><td class="mono small"></td></tr><tr><td class="mono">tijdstip_gemeld</td><td class="mono">DATETIME</td><td>Nee</td><td></td><td class="mono small">DEFAULT CURRENT_TIMESTAMP</td></tr><tr><td class="mono">status</td><td class="mono">VARCHAR(15)</td><td>Nee</td><td></td><td class="mono small">DEFAULT &#x27;Open&#x27;</td></tr><tr><td class="mono">afgehandeld_op</td><td class="mono">DATETIME</td><td>Ja</td><td></td><td class="mono small"></td></tr></tbody></table></div><ul class="cons"><li><span class="mono">fk_melding_station</span> FK (station_id) → sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE</li><li><span class="mono">fk_melding_vak</span> FK (station_id, vaknummer) → vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE</li><li><span class="mono">fk_melding_medewerker</span> FK (afgehandeld_door) → medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE SET NULL</li><li><span class="mono">ck_melding_type</span> CHECK (type IN (&#x27;VakVol&#x27;,&#x27;SensorStoring&#x27;,&#x27;ServoStoring&#x27;,&#x27;Offline&#x27;))</li><li><span class="mono">ck_melding_status</span> CHECK (status IN (&#x27;Open&#x27;,&#x27;InBehandeling&#x27;,&#x27;Afgehandeld&#x27;))</li><li><span class="mono">ck_melding_afgehandeld</span> CHECK (status &lt;&gt; &#x27;Afgehandeld&#x27; OR afgehandeld_op IS NOT NULL) <em>(een afgehandelde melding heeft een tijdstip van afhandeling)</em></li><li><em>Bedrijfsregel (in de applicatie): een melding &#x27;VakVol&#x27; heeft altijd een vaknummer</em></li></ul></article></div>
+</section>
+
+<section id="sql">
+  <div class="sec-head"><p class="eyebrow">Bouwen</p><h2>SQL-script</h2></div>
+  <p class="prose">Het volledige script maakt de database aan en vult hem met voorbeelddata. Het is getest op MariaDB: alle tabellen laden, en foute invoer (vaknummer 5, een gesorteerde scan zonder itemtype, een onbekende rol) wordt geweigerd.</p>
+  <div class="code-wrap"><button class="copy" id="copy-sql" type="button">Kopieer SQL</button><pre id="sql-code">-- =============================================================
+-- SortSmart – relationeel implementatiemodel (MySQL 8.0+)
+-- Team: Bram, Houssam, Mohmad, Diese, Daniyal
+-- =============================================================
+
+DROP DATABASE IF EXISTS sortsmart;
+CREATE DATABASE sortsmart CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE sortsmart;
+
+-- Campus waar SortSmart-stations staan
+CREATE TABLE campus (
+    campus_id   INT          NOT NULL AUTO_INCREMENT,
+    naam        VARCHAR(100) NOT NULL,
+    adres       VARCHAR(150) NOT NULL,
+    postcode    CHAR(6)      NOT NULL,
+    plaats      VARCHAR(80)  NOT NULL,
+    CONSTRAINT pk_campus PRIMARY KEY (campus_id),
+    CONSTRAINT uq_campus_naam UNIQUE (naam),
+    CONSTRAINT ck_campus_postcode CHECK (postcode REGEXP &#x27;^[1-9][0-9]{3}[A-Z]{2}$&#x27;)
+);
+
+-- Eén SortSmart-module bovenop een afvalbak
+CREATE TABLE sorteerstation (
+    station_id           INT          NOT NULL AUTO_INCREMENT,
+    campus_id            INT          NOT NULL,
+    serienummer          VARCHAR(30)  NOT NULL,
+    locatie_omschrijving VARCHAR(150) NOT NULL,
+    verdieping           TINYINT      NULL,
+    installatiedatum     DATE         NOT NULL,
+    firmware_versie      VARCHAR(20)  NOT NULL,
+    status               VARCHAR(10)  NOT NULL DEFAULT &#x27;Actief&#x27;,
+    CONSTRAINT pk_sorteerstation PRIMARY KEY (station_id),
+    CONSTRAINT uq_station_serienummer UNIQUE (serienummer),
+    CONSTRAINT fk_station_campus FOREIGN KEY (campus_id)
+        REFERENCES campus (campus_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_station_status CHECK (status IN (&#x27;Actief&#x27;,&#x27;Onderhoud&#x27;,&#x27;Storing&#x27;,&#x27;Inactief&#x27;))
+);
+
+-- Afvalstroom: Papier, PMD, Rest, Etensresten
+CREATE TABLE afvalfractie (
+    fractie_id   INT          NOT NULL AUTO_INCREMENT,
+    naam         VARCHAR(30)  NOT NULL,
+    kleurcode    CHAR(7)      NOT NULL,
+    omschrijving VARCHAR(255) NULL,
+    CONSTRAINT pk_afvalfractie PRIMARY KEY (fractie_id),
+    CONSTRAINT uq_fractie_naam UNIQUE (naam),
+    CONSTRAINT ck_fractie_kleur CHECK (kleurcode REGEXP &#x27;^#[0-9A-Fa-f]{6}$&#x27;)
+);
+
+-- Vak (zak/container) binnen een station – zwakke entiteit
+CREATE TABLE vak (
+    station_id        INT      NOT NULL,
+    vaknummer         TINYINT  NOT NULL,
+    fractie_id        INT      NOT NULL,
+    capaciteit_liter  SMALLINT NOT NULL,
+    vulgraad_procent  TINYINT  NOT NULL DEFAULT 0,
+    CONSTRAINT pk_vak PRIMARY KEY (station_id, vaknummer),
+    CONSTRAINT uq_vak_station_fractie UNIQUE (station_id, fractie_id),
+    CONSTRAINT fk_vak_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_vak_fractie FOREIGN KEY (fractie_id)
+        REFERENCES afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_vak_nummer    CHECK (vaknummer BETWEEN 1 AND 4),
+    CONSTRAINT ck_vak_capaciteit CHECK (capaciteit_liter &gt; 0),
+    CONSTRAINT ck_vak_vulgraad  CHECK (vulgraad_procent BETWEEN 0 AND 100)
+);
+
+-- Soort item dat de sensor kan herkennen (blikje, koffiebeker, ...)
+CREATE TABLE itemtype (
+    itemtype_id INT         NOT NULL AUTO_INCREMENT,
+    fractie_id  INT         NOT NULL,
+    naam        VARCHAR(60) NOT NULL,
+    materiaal   VARCHAR(40) NOT NULL,
+    CONSTRAINT pk_itemtype PRIMARY KEY (itemtype_id),
+    CONSTRAINT uq_itemtype_naam UNIQUE (naam),
+    CONSTRAINT fk_itemtype_fractie FOREIGN KEY (fractie_id)
+        REFERENCES afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+-- Elke keer dat iemand iets boven het scanplatform houdt
+CREATE TABLE scan (
+    scan_id          BIGINT       NOT NULL AUTO_INCREMENT,
+    station_id       INT          NOT NULL,
+    itemtype_id      INT          NULL,
+    tijdstip         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    betrouwbaarheid  DECIMAL(5,2) NULL,
+    resultaat        VARCHAR(25)  NOT NULL,
+    CONSTRAINT pk_scan PRIMARY KEY (scan_id),
+    CONSTRAINT fk_scan_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    -- geen ON DELETE/UPDATE-actie: MySQL staat dat niet toe op een kolom in een CHECK
+    CONSTRAINT fk_scan_itemtype FOREIGN KEY (itemtype_id)
+        REFERENCES itemtype (itemtype_id),
+    CONSTRAINT ck_scan_resultaat CHECK (resultaat IN
+        (&#x27;Gesorteerd&#x27;,&#x27;MeerdereItems&#x27;,&#x27;VloeistofGedetecteerd&#x27;,&#x27;NietHerkend&#x27;)),
+    CONSTRAINT ck_scan_betrouwbaarheid CHECK (betrouwbaarheid BETWEEN 0 AND 100),
+    -- een gesorteerd item moet herkend zijn
+    CONSTRAINT ck_scan_gesorteerd CHECK (resultaat &lt;&gt; &#x27;Gesorteerd&#x27; OR itemtype_id IS NOT NULL)
+);
+
+-- Facilitair-, schoonmaak- of beheermedewerker
+CREATE TABLE medewerker (
+    medewerker_id INT          NOT NULL AUTO_INCREMENT,
+    voornaam      VARCHAR(50)  NOT NULL,
+    tussenvoegsel VARCHAR(15)  NULL,
+    achternaam    VARCHAR(80)  NOT NULL,
+    email         VARCHAR(150) NOT NULL,
+    rol           VARCHAR(12)  NOT NULL,
+    CONSTRAINT pk_medewerker PRIMARY KEY (medewerker_id),
+    CONSTRAINT uq_medewerker_email UNIQUE (email),
+    CONSTRAINT ck_medewerker_rol CHECK (rol IN (&#x27;Facilitair&#x27;,&#x27;Schoonmaak&#x27;,&#x27;Beheerder&#x27;))
+);
+
+-- Het legen van een vak door een medewerker
+CREATE TABLE leging (
+    leging_id            INT          NOT NULL AUTO_INCREMENT,
+    station_id           INT          NOT NULL,
+    vaknummer            TINYINT      NOT NULL,
+    medewerker_id        INT          NOT NULL,
+    tijdstip             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    vulgraad_voor_leging TINYINT      NOT NULL,
+    gewicht_kg           DECIMAL(5,2) NULL,
+    CONSTRAINT pk_leging PRIMARY KEY (leging_id),
+    CONSTRAINT fk_leging_vak FOREIGN KEY (station_id, vaknummer)
+        REFERENCES vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_leging_medewerker FOREIGN KEY (medewerker_id)
+        REFERENCES medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_leging_vulgraad CHECK (vulgraad_voor_leging BETWEEN 0 AND 100),
+    CONSTRAINT ck_leging_gewicht  CHECK (gewicht_kg &gt;= 0)
+);
+
+-- Melding van een station (vak vol, storing, offline)
+CREATE TABLE melding (
+    melding_id           INT          NOT NULL AUTO_INCREMENT,
+    station_id           INT          NOT NULL,
+    vaknummer            TINYINT      NULL,
+    afgehandeld_door     INT          NULL,
+    type                 VARCHAR(15)  NOT NULL,
+    omschrijving         VARCHAR(255) NULL,
+    tijdstip_gemeld      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status               VARCHAR(15)  NOT NULL DEFAULT &#x27;Open&#x27;,
+    afgehandeld_op DATETIME     NULL,
+    CONSTRAINT pk_melding PRIMARY KEY (melding_id),
+    CONSTRAINT fk_melding_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_melding_vak FOREIGN KEY (station_id, vaknummer)
+        REFERENCES vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_melding_medewerker FOREIGN KEY (afgehandeld_door)
+        REFERENCES medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT ck_melding_type   CHECK (type IN (&#x27;VakVol&#x27;,&#x27;SensorStoring&#x27;,&#x27;ServoStoring&#x27;,&#x27;Offline&#x27;)),
+    CONSTRAINT ck_melding_status CHECK (status IN (&#x27;Open&#x27;,&#x27;InBehandeling&#x27;,&#x27;Afgehandeld&#x27;)),
+    -- een afgehandelde melding heeft een tijdstip van afhandeling
+    CONSTRAINT ck_melding_afgehandeld CHECK (status &lt;&gt; &#x27;Afgehandeld&#x27; OR afgehandeld_op IS NOT NULL)
+    -- bedrijfsregel (in de applicatie): een melding &#x27;VakVol&#x27; heeft altijd een vaknummer
+);
+
+-- =============================================================
+-- Voorbeelddata
+-- =============================================================
+INSERT INTO campus (naam, adres, postcode, plaats) VALUES
+ (&#x27;Campus Den Haag&#x27;, &#x27;Johanna Westerdijkplein 75&#x27;, &#x27;2521EN&#x27;, &#x27;Den Haag&#x27;);
+
+INSERT INTO afvalfractie (naam, kleurcode, omschrijving) VALUES
+ (&#x27;Papier&#x27;,      &#x27;#1E63B5&#x27;, &#x27;Papier en karton, droog en schoon&#x27;),
+ (&#x27;PMD&#x27;,         &#x27;#F28C00&#x27;, &#x27;Plastic verpakkingen, metalen blik en drinkpakken&#x27;),
+ (&#x27;Rest&#x27;,        &#x27;#5A5A5A&#x27;, &#x27;Alles wat niet gerecycled kan worden&#x27;),
+ (&#x27;Etensresten&#x27;, &#x27;#3C8D2F&#x27;, &#x27;Groente-, fruit- en etensresten&#x27;);
+
+INSERT INTO sorteerstation (campus_id, serienummer, locatie_omschrijving, verdieping, installatiedatum, firmware_versie) VALUES
+ (1, &#x27;SS-2026-0001&#x27;, &#x27;Kantine, naast de koffieautomaat&#x27;, 0, &#x27;2026-11-02&#x27;, &#x27;0.3.1&#x27;);
+
+INSERT INTO vak (station_id, vaknummer, fractie_id, capaciteit_liter, vulgraad_procent) VALUES
+ (1, 1, 1, 60, 35), (1, 2, 2, 60, 82), (1, 3, 3, 60, 20), (1, 4, 4, 30, 10);
+
+INSERT INTO itemtype (fractie_id, naam, materiaal) VALUES
+ (2, &#x27;Frisdrankblikje&#x27;, &#x27;Aluminium&#x27;),
+ (2, &#x27;PET-flesje&#x27;, &#x27;Kunststof&#x27;),
+ (2, &#x27;Drinkpak&#x27;, &#x27;Karton/laminaat&#x27;),
+ (1, &#x27;Kartonnen broodjesdoos&#x27;, &#x27;Karton&#x27;),
+ (3, &#x27;Koffiebeker&#x27;, &#x27;Papier met PE-coating&#x27;),
+ (4, &#x27;Appelklokhuis&#x27;, &#x27;Organisch&#x27;);
+
+INSERT INTO medewerker (voornaam, tussenvoegsel, achternaam, email, rol) VALUES
+ (&#x27;Sanne&#x27;, NULL, &#x27;Jansen&#x27;, &#x27;s.jansen@campus.example&#x27;, &#x27;Facilitair&#x27;),
+ (&#x27;Ahmed&#x27;, &#x27;el&#x27;, &#x27;Amrani&#x27;, &#x27;a.elamrani@campus.example&#x27;, &#x27;Schoonmaak&#x27;);
+
+INSERT INTO scan (station_id, itemtype_id, tijdstip, betrouwbaarheid, resultaat) VALUES
+ (1, 1,    &#x27;2026-11-10 10:02:11&#x27;, 97.40, &#x27;Gesorteerd&#x27;),
+ (1, 3,    &#x27;2026-11-10 10:02:45&#x27;, 88.10, &#x27;VloeistofGedetecteerd&#x27;),
+ (1, NULL, &#x27;2026-11-10 10:03:30&#x27;, NULL,  &#x27;MeerdereItems&#x27;),
+ (1, 5,    &#x27;2026-11-10 10:04:02&#x27;, 91.25, &#x27;Gesorteerd&#x27;);
+
+INSERT INTO melding (station_id, vaknummer, type, omschrijving, tijdstip_gemeld) VALUES
+ (1, 2, &#x27;VakVol&#x27;, &#x27;PMD-vak boven 80%&#x27;, &#x27;2026-11-10 10:05:00&#x27;);
+
+INSERT INTO leging (station_id, vaknummer, medewerker_id, tijdstip, vulgraad_voor_leging, gewicht_kg) VALUES
+ (1, 2, 2, &#x27;2026-11-10 11:15:00&#x27;, 84, 3.40);
+
+UPDATE melding SET status = &#x27;Afgehandeld&#x27;, afgehandeld_door = 2,
+       afgehandeld_op = &#x27;2026-11-10 11:15:00&#x27; WHERE melding_id = 1;
+UPDATE vak SET vulgraad_procent = 0 WHERE station_id = 1 AND vaknummer = 2;
+
+-- Voorbeeldquery: scheidingsresultaat per fractie
+-- SELECT f.naam, COUNT(*) AS aantal
+-- FROM scan s JOIN itemtype i ON i.itemtype_id = s.itemtype_id
+--             JOIN afvalfractie f ON f.fractie_id = i.fractie_id
+-- WHERE s.resultaat = &#x27;Gesorteerd&#x27;
+-- GROUP BY f.naam;
+</pre></div>
+</section>
+
+<section id="keuzes">
+  <div class="sec-head"><p class="eyebrow">Verantwoording</p><h2>Ontwerpkeuzes</h2></div>
+  <ul class="choices">
+    <li><b>Geen dubbele gegevens (3NF).</b> Welk vak er bij een scan openging slaan we niet op: dat volgt uit station + itemtype → fractie → vak. Zo kan het nooit tegenstrijdig worden.</li>
+    <li><b>Eén fractie per station.</b> De UNIQUE-constraint op (<span class="mono">station_id</span>, <span class="mono">fractie_id</span>) in VAK zorgt dat die afleiding altijd precies één vak oplevert.</li>
+    <li><b>Samengestelde vreemde sleutel.</b> MELDING en LEGING verwijzen met (<span class="mono">station_id</span>, <span class="mono">vaknummer</span>) naar VAK. Een melding over vak 3 van station 7 kan daardoor alleen bestaan als dat vak echt bestaat.</li>
+    <li><b>Historie blijft bewaard.</b> Een itemtype kan niet verwijderd worden zolang er scans naar verwijzen. Een medewerker die vertrekt, wordt bij meldingen op NULL gezet.</li>
+    <li><b>Bedrijfsregels in de database.</b> CHECK-constraints bewaken percentages (0–100), postcodes (1234AB), kleurcodes (#RRGGBB) en de vaste waardenlijsten.</li>
+    <li><b>Uitbreiding later.</b> Willen we recycling belonend maken (punten of een ranglijst), dan kan er een tabel DEELNEMER bij met een optionele koppeling vanuit SCAN, zonder dat de rest verandert.</li>
+  </ul>
+</section>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('copy-sql');
+  var pre = document.getElementById('sql-code');
+  btn.addEventListener('click', function () {
+    var done = function () { btn.textContent = 'Gekopieerd'; setTimeout(function () { btn.textContent = 'Kopieer SQL'; }, 1800); };
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'Geselecteerd, druk Ctrl+C';
+    };
+    try { navigator.clipboard.writeText(pre.textContent).then(done, fallback); } catch (e) { fallback(); }
+  });
+})();
+</script>
+
+</body></html>

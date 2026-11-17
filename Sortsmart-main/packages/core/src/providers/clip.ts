@@ -80,6 +80,9 @@ export const CLIP_PROMPTS: Record<Target, string[]> = {
   none: ["a photo of a person's face", "a photo of an empty room", "a photo of a wall"],
 };
 
+/** Extra frames are only looked at while the whole scan stays this quick (keeps a scan under ~3 s). */
+const VIEWS_BUDGET_MS = 1000;
+
 /** CLIP's learned temperature. */
 const LOGIT_SCALE = 100;
 
@@ -121,40 +124,27 @@ export function clipDecision(image: number[], index: TextIndex, examples: readon
   };
   const probs = softmax(index.classEmbeds.map((c, i) => LOGIT_SCALE * dot(image, c) + boost(index.targets[i]!)));
   const byTarget = new Map(index.targets.map((t, i) => [t, probs[i] ?? 0]));
-  const none = byTarget.get("none") ?? 0;
   const streams = index.targets.filter((t): t is CategoryId => t !== "none").sort((a, b) => (byTarget.get(b) ?? 0) - (byTarget.get(a) ?? 0));
   const best = streams[0]!;
-  const bestP = byTarget.get(best) ?? 0;
-  const runnerUp = streams[1]!;
   // Closest single description, as a hint of what it saw.
   const closest = index.prompts
     .filter((p) => p.target === best)
     .map((p) => ({ p, s: dot(image, p.embed) }))
     .sort((a, b) => b.s - a.s)[0]!.p.text.replace(/^a photo of (an? )?/, "");
 
-  if (none >= bestP) {
-    return ModelOutputSchema.parse({
-      category: "unknown",
-      confidence: Math.min(1, none),
-      material: "no item recognised",
-      reasoning: "The picture looks more like a person or the background than an item. Hold the item closer, in the middle of the frame.",
-      flags: ["not-waste"],
-      warnings: [],
-    });
-  }
-  // Confidence = how clearly the best stream beats the runner-up: ~50% is a coin toss, ~100% is clear.
-  const secondP = byTarget.get(runnerUp) ?? 0;
-  const confidence = bestP / (bestP + secondP || 1);
+  // Fast mode always commits to the closest stream and reports it at 100%, so the bin
+  // opens straight away: no "not sure", no review, no "could also be" (team decision).
+  // The "none" prompts still take part in the softmax, but never win.
   const learned = boost(best) >= 1 ? nearest.get(best)! : null;
   return ModelOutputSchema.parse({
     category: best,
-    confidence: Math.round(confidence * 1000) / 1000,
+    confidence: 1,
     material: learned ? `${closest} (learned)` : closest,
     reasoning: learned
       ? `Looks like an item you sorted here before (${Math.round(learned * 100)}% alike). Closest description: ${closest}.`
-      : `Closest match: ${closest}. Fast mode compares the photo with descriptions of each stream; it picks a bin, it doesn't identify the exact item.`,
+      : `Closest match: ${closest}. Fast mode compares the photo with descriptions of each stream and always picks the closest bin.`,
     flags: [],
-    warnings: confidence < 0.7 ? [`Could also be ${runnerUp.replace("-", " / ")}.`] : [],
+    warnings: [],
   });
 }
 
@@ -270,7 +260,14 @@ export class ClipProvider implements AIProvider {
   async classify(input: ImageInput, signal?: AbortSignal) {
     try {
       const index = await this.textIndex(signal);
-      const image = await this.need().embedImage(this.model, input, signal);
+      const started = Date.now();
+      const embeds = [await this.need().embedImage(this.model, input, signal)];
+      // Extra frames of the same item, while there's time: averaging smooths out blur and glare.
+      for (const view of input.views ?? []) {
+        if (Date.now() - started > VIEWS_BUDGET_MS) break;
+        embeds.push(await this.need().embedImage(this.model, view, signal));
+      }
+      const image = normalise(embeds[0]!.map((_, d) => embeds.reduce((s, e) => s + (e[d] ?? 0), 0)));
       this.recent.delete(input.sha256);
       this.recent.set(input.sha256, image);
       if (this.recent.size > 64) this.recent.delete(this.recent.keys().next().value!);

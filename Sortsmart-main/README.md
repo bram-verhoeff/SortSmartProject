@@ -8,7 +8,8 @@ packages/ui       Design tokens, bundled fonts, shared primitives
 apps/web          Website (/) and the web app (/app) — liquid glass hero, smoke settling into five streams (src/gl)
 apps/web/src/app  The app: live camera, AI providers, history, settings
 apps/server       Node + Express API: AI request proxy, API keys, settings and history in MySQL
-database/         MySQL schema (schema.sql) and sample data (seed.sql)
+database/         MySQL schema (schema.sql), sample data (seed.sql) and the design: class diagram,
+                  relational model and implementation model (open ontwerp.html in a browser)
 ```
 
 ## Run
@@ -16,7 +17,7 @@ database/         MySQL schema (schema.sql) and sample data (seed.sql)
 Requires Node 20+ and MySQL (XAMPP works out of the box).
 
 1. Start **MySQL** in the XAMPP Control Panel.
-2. Import the database once (this wipes existing tables):
+2. Import the database once. This recreates the domain tables (campus to melding) and wipes their data; the app's own tables (settings, history, API keys, learned examples) are kept:
    ```bash
    C:\xampp\mysql\bin\mysql.exe -u root < database\schema.sql
    C:\xampp\mysql\bin\mysql.exe -u root < database\seed.sql      # optional sample data

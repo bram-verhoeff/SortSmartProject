@@ -13,6 +13,11 @@ export interface ImageInput {
   base64: string;
   sizeBytes: number;
   sha256: string;
+  /**
+   * More camera frames of the same item, taken just after this one. Fast mode averages
+   * them, so one blurry or badly lit frame doesn't decide the bin. Other providers ignore them.
+   */
+  views?: ImageInput[];
 }
 
 export interface ModelInfo {

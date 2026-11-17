@@ -1,244 +1,208 @@
--- =====================================================================
--- SortSmart – databaseschema (MySQL 8+ / MariaDB 10.4+)
--- Gebaseerd op het UML-klassendiagram.
+-- =============================================================
+-- SortSmart – relationeel implementatiemodel (MySQL 8.0+ / MariaDB 10.4+)
+-- Team: Bram, Houssam, Mohmad, Diese, Daniyal
+-- Ontwerp (klassendiagram, representatiemodel, implementatiemodel):
+-- zie database/ontwerp.html
 --
--- Uitvoeren:  mysql -u root -p < database/schema.sql
--- LET OP: dit script verwijdert bestaande tabellen en maakt ze opnieuw aan.
--- =====================================================================
+-- Uitvoeren:  mysql -u root < database/schema.sql
+-- LET OP: de domeintabellen (campus t/m melding) worden verwijderd en
+-- opnieuw aangemaakt. De tabellen van de webapp zelf (app_opslag,
+-- api_sleutel, leervoorbeeld) blijven staan, dus instellingen,
+-- geschiedenis en API-sleutels gaan niet verloren.
+-- =============================================================
 
-CREATE DATABASE IF NOT EXISTS sortsmart
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
+CREATE DATABASE IF NOT EXISTS sortsmart CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE sortsmart;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS leervoorbeeld;
-DROP TABLE IF EXISTS api_sleutel;
-DROP TABLE IF EXISTS app_opslag;
-DROP TABLE IF EXISTS leging;
 DROP TABLE IF EXISTS melding;
+DROP TABLE IF EXISTS leging;
 DROP TABLE IF EXISTS medewerker;
 DROP TABLE IF EXISTS scan;
-DROP TABLE IF EXISTS vak;
 DROP TABLE IF EXISTS itemtype;
+DROP TABLE IF EXISTS vak;
 DROP TABLE IF EXISTS afvalfractie;
 DROP TABLE IF EXISTS sorteerstation;
 DROP TABLE IF EXISTS campus;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ---------------------------------------------------------------------
--- Campus
--- ---------------------------------------------------------------------
+-- Campus waar SortSmart-stations staan
 CREATE TABLE campus (
-  id        INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  naam      VARCHAR(100)  NOT NULL,
-  adres     VARCHAR(150)  NOT NULL,
-  postcode  VARCHAR(10)   NOT NULL,
-  plaats    VARCHAR(100)  NOT NULL,
-  PRIMARY KEY (id)
+    campus_id   INT          NOT NULL AUTO_INCREMENT,
+    naam        VARCHAR(100) NOT NULL,
+    adres       VARCHAR(150) NOT NULL,
+    postcode    CHAR(6)      NOT NULL,
+    plaats      VARCHAR(80)  NOT NULL,
+    CONSTRAINT pk_campus PRIMARY KEY (campus_id),
+    CONSTRAINT uq_campus_naam UNIQUE (naam),
+    CONSTRAINT ck_campus_postcode CHECK (postcode REGEXP '^[1-9][0-9]{3}[A-Z]{2}$')
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- SorteerStation   (Campus 1 —heeft— 0..* SorteerStation)
--- ---------------------------------------------------------------------
+-- Eén SortSmart-module bovenop een afvalbak
 CREATE TABLE sorteerstation (
-  id                    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  campus_id             INT UNSIGNED  NOT NULL,
-  serienummer           VARCHAR(50)   NOT NULL,
-  locatie_omschrijving  VARCHAR(255)  NOT NULL,
-  verdieping            INT           NULL,
-  installatiedatum      DATE          NOT NULL,
-  firmware_versie       VARCHAR(30)   NOT NULL,
-  status                ENUM('Actief', 'Onderhoud', 'Storing', 'Inactief')
-                                      NOT NULL DEFAULT 'Actief',
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_sorteerstation_serienummer (serienummer),
-  KEY idx_sorteerstation_campus (campus_id),
-  CONSTRAINT fk_sorteerstation_campus
-    FOREIGN KEY (campus_id) REFERENCES campus (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT
+    station_id           INT          NOT NULL AUTO_INCREMENT,
+    campus_id            INT          NOT NULL,
+    serienummer          VARCHAR(30)  NOT NULL,
+    locatie_omschrijving VARCHAR(150) NOT NULL,
+    verdieping           TINYINT      NULL,
+    installatiedatum     DATE         NOT NULL,
+    firmware_versie      VARCHAR(20)  NOT NULL,
+    status               VARCHAR(10)  NOT NULL DEFAULT 'Actief',
+    CONSTRAINT pk_sorteerstation PRIMARY KEY (station_id),
+    CONSTRAINT uq_station_serienummer UNIQUE (serienummer),
+    CONSTRAINT fk_station_campus FOREIGN KEY (campus_id)
+        REFERENCES campus (campus_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_station_status CHECK (status IN ('Actief','Onderhoud','Storing','Inactief'))
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- Afvalfractie
--- ---------------------------------------------------------------------
+-- Afvalstroom: Papier, PMD, Rest, Etensresten
 CREATE TABLE afvalfractie (
-  id           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  naam         VARCHAR(50)   NOT NULL,
-  kleurcode    VARCHAR(20)   NOT NULL,
-  omschrijving VARCHAR(255)  NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_afvalfractie_naam (naam)
+    fractie_id   INT          NOT NULL AUTO_INCREMENT,
+    naam         VARCHAR(30)  NOT NULL,
+    kleurcode    CHAR(7)      NOT NULL,
+    omschrijving VARCHAR(255) NULL,
+    CONSTRAINT pk_afvalfractie PRIMARY KEY (fractie_id),
+    CONSTRAINT uq_fractie_naam UNIQUE (naam),
+    CONSTRAINT ck_fractie_kleur CHECK (kleurcode REGEXP '^#[0-9A-Fa-f]{6}$')
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- ItemType   (ItemType 0..* —hoort bij— 1 Afvalfractie)
--- ---------------------------------------------------------------------
-CREATE TABLE itemtype (
-  id               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  afvalfractie_id  INT UNSIGNED  NOT NULL,
-  naam             VARCHAR(100)  NOT NULL,
-  materiaal        VARCHAR(100)  NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_itemtype_naam (naam),
-  KEY idx_itemtype_afvalfractie (afvalfractie_id),
-  CONSTRAINT fk_itemtype_afvalfractie
-    FOREIGN KEY (afvalfractie_id) REFERENCES afvalfractie (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE = InnoDB;
-
--- ---------------------------------------------------------------------
--- Vak   (SorteerStation 1 ◆—bestaat uit— 1..4 Vak, compositie)
---       (Vak 0..* —is voor— 1 Afvalfractie)
--- Compositie: een vak verdwijnt mee als het station verwijderd wordt.
--- Max. 4 vakken per station wordt afgedwongen door vaknummer 1–4 + uniek.
--- ---------------------------------------------------------------------
+-- Vak (zak/container) binnen een station – zwakke entiteit
 CREATE TABLE vak (
-  id                  INT UNSIGNED      NOT NULL AUTO_INCREMENT,
-  sorteerstation_id   INT UNSIGNED      NOT NULL,
-  afvalfractie_id     INT UNSIGNED      NOT NULL,
-  vaknummer           TINYINT UNSIGNED  NOT NULL,
-  capaciteit_liter    INT UNSIGNED      NOT NULL,
-  vulgraad_procent    TINYINT UNSIGNED  NOT NULL DEFAULT 0,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_vak_station_nummer (sorteerstation_id, vaknummer),
-  KEY idx_vak_afvalfractie (afvalfractie_id),
-  CONSTRAINT chk_vak_vaknummer        CHECK (vaknummer BETWEEN 1 AND 4),
-  CONSTRAINT chk_vak_capaciteit       CHECK (capaciteit_liter > 0),
-  CONSTRAINT chk_vak_vulgraad         CHECK (vulgraad_procent BETWEEN 0 AND 100),
-  CONSTRAINT fk_vak_sorteerstation
-    FOREIGN KEY (sorteerstation_id) REFERENCES sorteerstation (id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_vak_afvalfractie
-    FOREIGN KEY (afvalfractie_id) REFERENCES afvalfractie (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT
+    station_id        INT      NOT NULL,
+    vaknummer         TINYINT  NOT NULL,
+    fractie_id        INT      NOT NULL,
+    capaciteit_liter  SMALLINT NOT NULL,
+    vulgraad_procent  TINYINT  NOT NULL DEFAULT 0,
+    CONSTRAINT pk_vak PRIMARY KEY (station_id, vaknummer),
+    CONSTRAINT uq_vak_station_fractie UNIQUE (station_id, fractie_id),
+    CONSTRAINT fk_vak_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_vak_fractie FOREIGN KEY (fractie_id)
+        REFERENCES afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_vak_nummer    CHECK (vaknummer BETWEEN 1 AND 4),
+    CONSTRAINT ck_vak_capaciteit CHECK (capaciteit_liter > 0),
+    CONSTRAINT ck_vak_vulgraad  CHECK (vulgraad_procent BETWEEN 0 AND 100)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- Scan   (SorteerStation 1 —registreert— 0..* Scan)
---        (Scan 0..* —herkent als— 0..1 ItemType)
--- ---------------------------------------------------------------------
+-- Soort item dat de sensor kan herkennen (blikje, koffiebeker, ...)
+CREATE TABLE itemtype (
+    itemtype_id INT         NOT NULL AUTO_INCREMENT,
+    fractie_id  INT         NOT NULL,
+    naam        VARCHAR(60) NOT NULL,
+    materiaal   VARCHAR(40) NOT NULL,
+    CONSTRAINT pk_itemtype PRIMARY KEY (itemtype_id),
+    CONSTRAINT uq_itemtype_naam UNIQUE (naam),
+    CONSTRAINT fk_itemtype_fractie FOREIGN KEY (fractie_id)
+        REFERENCES afvalfractie (fractie_id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE = InnoDB;
+
+-- Elke keer dat iemand iets boven het scanplatform houdt
 CREATE TABLE scan (
-  id                 BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  sorteerstation_id  INT UNSIGNED     NOT NULL,
-  itemtype_id        INT UNSIGNED     NULL,
-  tijdstip           DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  betrouwbaarheid    DECIMAL(5,4)     NULL,      -- 0.0000 – 1.0000
-  resultaat          ENUM('Gesorteerd', 'MeerdereItems', 'VloeistofGedetecteerd', 'NietHerkend')
-                                      NOT NULL,
-  PRIMARY KEY (id),
-  KEY idx_scan_station_tijdstip (sorteerstation_id, tijdstip),
-  KEY idx_scan_itemtype (itemtype_id),
-  CONSTRAINT chk_scan_betrouwbaarheid
-    CHECK (betrouwbaarheid IS NULL OR betrouwbaarheid BETWEEN 0 AND 1),
-  CONSTRAINT fk_scan_sorteerstation
-    FOREIGN KEY (sorteerstation_id) REFERENCES sorteerstation (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT fk_scan_itemtype
-    FOREIGN KEY (itemtype_id) REFERENCES itemtype (id)
-    ON UPDATE CASCADE ON DELETE SET NULL
+    scan_id          BIGINT       NOT NULL AUTO_INCREMENT,
+    station_id       INT          NOT NULL,
+    itemtype_id      INT          NULL,
+    tijdstip         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    betrouwbaarheid  DECIMAL(5,2) NULL,
+    resultaat        VARCHAR(25)  NOT NULL,
+    CONSTRAINT pk_scan PRIMARY KEY (scan_id),
+    CONSTRAINT fk_scan_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    -- geen ON DELETE/UPDATE-actie: MySQL staat dat niet toe op een kolom in een CHECK
+    CONSTRAINT fk_scan_itemtype FOREIGN KEY (itemtype_id)
+        REFERENCES itemtype (itemtype_id),
+    CONSTRAINT ck_scan_resultaat CHECK (resultaat IN
+        ('Gesorteerd','MeerdereItems','VloeistofGedetecteerd','NietHerkend')),
+    CONSTRAINT ck_scan_betrouwbaarheid CHECK (betrouwbaarheid BETWEEN 0 AND 100),
+    -- een gesorteerd item moet herkend zijn
+    CONSTRAINT ck_scan_gesorteerd CHECK (resultaat <> 'Gesorteerd' OR itemtype_id IS NOT NULL)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- Medewerker
--- ---------------------------------------------------------------------
+-- Facilitair-, schoonmaak- of beheermedewerker
 CREATE TABLE medewerker (
-  id               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  voornaam         VARCHAR(50)   NOT NULL,
-  tussenvoegsel    VARCHAR(20)   NULL,
-  achternaam       VARCHAR(80)   NOT NULL,
-  email            VARCHAR(255)  NOT NULL,
-  rol              ENUM('Facilitair', 'Schoonmaak', 'Beheerder') NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_medewerker_email (email)
+    medewerker_id INT          NOT NULL AUTO_INCREMENT,
+    voornaam      VARCHAR(50)  NOT NULL,
+    tussenvoegsel VARCHAR(15)  NULL,
+    achternaam    VARCHAR(80)  NOT NULL,
+    email         VARCHAR(150) NOT NULL,
+    rol           VARCHAR(12)  NOT NULL,
+    CONSTRAINT pk_medewerker PRIMARY KEY (medewerker_id),
+    CONSTRAINT uq_medewerker_email UNIQUE (email),
+    CONSTRAINT ck_medewerker_rol CHECK (rol IN ('Facilitair','Schoonmaak','Beheerder'))
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- Melding   (SorteerStation 1 —genereert— 0..* Melding)
---           (Melding 0..* —betreft— 0..1 Vak)
---           (Melding 0..* —handelt af— 0..1 Medewerker)
--- ---------------------------------------------------------------------
-CREATE TABLE melding (
-  id                 BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  sorteerstation_id  INT UNSIGNED     NOT NULL,
-  vak_id             INT UNSIGNED     NULL,
-  medewerker_id      INT UNSIGNED     NULL,
-  tijdstip_gemeld    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  type               ENUM('VakVol', 'SensorStoring', 'ServoStoring', 'Offline') NOT NULL,
-  omschrijving       VARCHAR(500)     NULL,
-  status             ENUM('Open', 'InBehandeling', 'Afgehandeld') NOT NULL DEFAULT 'Open',
-  afgehandeld_op     DATETIME         NULL,
-  PRIMARY KEY (id),
-  KEY idx_melding_station (sorteerstation_id),
-  KEY idx_melding_vak (vak_id),
-  KEY idx_melding_medewerker (medewerker_id),
-  KEY idx_melding_status (status),
-  CONSTRAINT chk_melding_afgehandeld
-    CHECK (afgehandeld_op IS NULL OR afgehandeld_op >= tijdstip_gemeld),
-  CONSTRAINT fk_melding_sorteerstation
-    FOREIGN KEY (sorteerstation_id) REFERENCES sorteerstation (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT fk_melding_vak
-    FOREIGN KEY (vak_id) REFERENCES vak (id)
-    ON UPDATE CASCADE ON DELETE SET NULL,
-  CONSTRAINT fk_melding_medewerker
-    FOREIGN KEY (medewerker_id) REFERENCES medewerker (id)
-    ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE = InnoDB;
-
--- ---------------------------------------------------------------------
--- Leging   (Vak 1 —wordt geleegd— 0..* Leging)
---          (Medewerker 1 —voert uit— 0..* Leging)
--- ---------------------------------------------------------------------
+-- Het legen van een vak door een medewerker
 CREATE TABLE leging (
-  id                       BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  vak_id                   INT UNSIGNED      NOT NULL,
-  medewerker_id            INT UNSIGNED      NOT NULL,
-  tijdstip                 DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  vulgraad_voor_leging     TINYINT UNSIGNED  NOT NULL,
-  gewicht_kg               DECIMAL(6,2)      NULL,
-  PRIMARY KEY (id),
-  KEY idx_leging_vak_tijdstip (vak_id, tijdstip),
-  KEY idx_leging_medewerker (medewerker_id),
-  CONSTRAINT chk_leging_vulgraad CHECK (vulgraad_voor_leging BETWEEN 0 AND 100),
-  CONSTRAINT chk_leging_gewicht  CHECK (gewicht_kg IS NULL OR gewicht_kg >= 0),
-  CONSTRAINT fk_leging_vak
-    FOREIGN KEY (vak_id) REFERENCES vak (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  CONSTRAINT fk_leging_medewerker
-    FOREIGN KEY (medewerker_id) REFERENCES medewerker (id)
-    ON UPDATE CASCADE ON DELETE RESTRICT
+    leging_id            INT          NOT NULL AUTO_INCREMENT,
+    station_id           INT          NOT NULL,
+    vaknummer            TINYINT      NOT NULL,
+    medewerker_id        INT          NOT NULL,
+    tijdstip             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    vulgraad_voor_leging TINYINT      NOT NULL,
+    gewicht_kg           DECIMAL(5,2) NULL,
+    CONSTRAINT pk_leging PRIMARY KEY (leging_id),
+    CONSTRAINT fk_leging_vak FOREIGN KEY (station_id, vaknummer)
+        REFERENCES vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_leging_medewerker FOREIGN KEY (medewerker_id)
+        REFERENCES medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_leging_vulgraad CHECK (vulgraad_voor_leging BETWEEN 0 AND 100),
+    CONSTRAINT ck_leging_gewicht  CHECK (gewicht_kg >= 0)
 ) ENGINE = InnoDB;
 
--- =====================================================================
--- Tabellen van de webapp zelf (de server maakt ze ook aan als ze ontbreken)
--- =====================================================================
+-- Melding van een station (vak vol, storing, offline)
+CREATE TABLE melding (
+    melding_id           INT          NOT NULL AUTO_INCREMENT,
+    station_id           INT          NOT NULL,
+    vaknummer            TINYINT      NULL,
+    afgehandeld_door     INT          NULL,
+    type                 VARCHAR(15)  NOT NULL,
+    omschrijving         VARCHAR(255) NULL,
+    tijdstip_gemeld      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status               VARCHAR(15)  NOT NULL DEFAULT 'Open',
+    afgehandeld_op       DATETIME     NULL,
+    CONSTRAINT pk_melding PRIMARY KEY (melding_id),
+    CONSTRAINT fk_melding_station FOREIGN KEY (station_id)
+        REFERENCES sorteerstation (station_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_melding_vak FOREIGN KEY (station_id, vaknummer)
+        REFERENCES vak (station_id, vaknummer) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_melding_medewerker FOREIGN KEY (afgehandeld_door)
+        REFERENCES medewerker (medewerker_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT ck_melding_type   CHECK (type IN ('VakVol','SensorStoring','ServoStoring','Offline')),
+    CONSTRAINT ck_melding_status CHECK (status IN ('Open','InBehandeling','Afgehandeld')),
+    -- een afgehandelde melding heeft een tijdstip van afhandeling
+    CONSTRAINT ck_melding_afgehandeld CHECK (status <> 'Afgehandeld' OR afgehandeld_op IS NOT NULL)
+    -- bedrijfsregel (in de applicatie): een melding 'VakVol' heeft altijd een vaknummer
+) ENGINE = InnoDB;
+
+-- =============================================================
+-- Tabellen van de webapp zelf. Ze worden NIET verwijderd, zodat
+-- instellingen, geschiedenis en API-sleutels bewaard blijven.
+-- De server maakt ze ook zelf aan als ze ontbreken.
+-- =============================================================
 
 -- Instellingen en classificatiegeschiedenis van de app, als gzip-JSON.
-CREATE TABLE app_opslag (
-  naam           VARCHAR(20)  NOT NULL,          -- 'settings' of 'history'
-  inhoud         LONGBLOB     NOT NULL,
-  bijgewerkt_op  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (naam)
+CREATE TABLE IF NOT EXISTS app_opslag (
+    naam           VARCHAR(20)  NOT NULL,          -- 'settings' of 'history'
+    inhoud         LONGBLOB     NOT NULL,
+    bijgewerkt_op  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (naam)
 ) ENGINE = InnoDB;
 
 -- API-sleutels van AI-providers. Alleen de server leest ze; de browser krijgt ze nooit terug.
-CREATE TABLE api_sleutel (
-  provider_id    VARCHAR(64)  NOT NULL,
-  sleutel        TEXT         NOT NULL,
-  origin         VARCHAR(255) NOT NULL,          -- sleutel mag alleen naar deze host
-  opgeslagen_op  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (provider_id)
+CREATE TABLE IF NOT EXISTS api_sleutel (
+    provider_id    VARCHAR(64)  NOT NULL,
+    sleutel        TEXT         NOT NULL,
+    origin         VARCHAR(255) NOT NULL,          -- sleutel mag alleen naar deze host
+    opgeslagen_op  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider_id)
 ) ENGINE = InnoDB;
 
 -- Wat de snelle modus leerde van correcties: een beeld-embedding (float32-reeks), nooit de foto zelf.
-CREATE TABLE leervoorbeeld (
-  id             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  model          VARCHAR(100)  NOT NULL,
-  categorie      VARCHAR(20)   NOT NULL,
-  embedding      BLOB          NOT NULL,
-  aangemaakt_op  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_leervoorbeeld_model (model, id)
+CREATE TABLE IF NOT EXISTS leervoorbeeld (
+    id             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    model          VARCHAR(100)  NOT NULL,
+    categorie      VARCHAR(20)   NOT NULL,
+    embedding      BLOB          NOT NULL,
+    aangemaakt_op  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_leervoorbeeld_model (model, id)
 ) ENGINE = InnoDB;

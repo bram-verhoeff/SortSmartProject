@@ -49,27 +49,51 @@ describe("Fast mode (CLIP)", () => {
     expect(createProvider(cfg, { transport: undefined as never, embedder: fakeEmbedder(axis("glass")) })).toBeInstanceOf(ClipProvider);
   });
 
-  it("picks the closest stream and reports confidence among streams", async () => {
+  it("picks the closest stream at 100%", async () => {
     const p = new ClipProvider(cfg, fakeEmbedder(leaning({ "plastic-metal": 0.3 })));
     const { output } = await p.classify(image);
     expect(output.category).toBe("plastic-metal");
-    expect(output.confidence).toBeGreaterThan(0.75);
+    expect(output.confidence).toBe(1);
     expect(output.flags).toEqual([]);
   });
 
-  it("declines when the picture is mostly a person or background", async () => {
+  it("still picks a stream when the picture is mostly a person or background", async () => {
     const p = new ClipProvider(cfg, fakeEmbedder(leaning({ none: 0.3, paper: 0.15 })));
     const { output } = await p.classify(image);
-    expect(output.category).toBe("unknown");
-    expect(output.flags).toContain("not-waste");
+    expect(output.category).toBe("paper");
+    expect(output.confidence).toBe(1);
   });
 
-  it("warns when two streams are close", async () => {
+  it("commits to one stream without warnings when two are close", async () => {
     const p = new ClipProvider(cfg, fakeEmbedder(leaning({ glass: 0.3, "plastic-metal": 0.298 })));
     const { output } = await p.classify(image);
     expect(output.category).toBe("glass");
-    expect(output.confidence).toBeLessThan(0.7);
-    expect(output.warnings.join(" ")).toMatch(/plastic \/ metal/);
+    expect(output.confidence).toBe(1);
+    expect(output.warnings).toEqual([]);
+  });
+
+  it("averages extra camera frames, so one bad frame doesn't decide", async () => {
+    const frames: Record<string, number[]> = {
+      blurry: leaning({ glass: 0.32, organic: 0.3 }),
+      good1: leaning({ organic: 0.4 }),
+      good2: leaning({ organic: 0.4 }),
+    };
+    const e: ImageEmbedder = {
+      async load() {},
+      async embedTexts(_m, texts) {
+        return texts.map((t) => axis(promptTarget.get(t)!));
+      },
+      async embedImage(_m, img) {
+        const v = frames[img.base64]!;
+        const n = Math.hypot(...v);
+        return v.map((x) => x / n);
+      },
+    };
+    const frame = (base64: string) => ({ ...image, base64, sha256: `sha-${base64}` });
+    const p = new ClipProvider(cfg, e);
+    expect((await p.classify(frame("blurry"))).output.category).toBe("glass");
+    const { output } = await p.classify({ ...frame("blurry"), views: [frame("good1"), frame("good2")] });
+    expect(output.category).toBe("organic");
   });
 
   it("computes the text side once, not per photo", async () => {

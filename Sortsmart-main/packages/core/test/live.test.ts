@@ -44,6 +44,15 @@ describe("SceneDetector", () => {
     expect(updates.at(-1)!.phase).toBe("holding");
   });
 
+  it("waits for a settled picture, but scans a still item within a second", () => {
+    const d = new SceneDetector();
+    run(d, empty, 0, 1000, 80);
+    const updates = run(d, item, 1200, 2000, 80);
+    const at = updates.findIndex((u) => u.scan) * 80;
+    expect(at).toBeGreaterThanOrEqual(500);
+    expect(at).toBeLessThanOrEqual(1000);
+  });
+
   it("scans a hand-held item that never fully stops, but only once", () => {
     const d = new SceneDetector();
     run(d, empty, 0, 1000);
