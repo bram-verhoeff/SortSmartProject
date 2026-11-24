@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.DbFoutController"
+      alignment="CENTER" spacing="20" styleClass="db-fout-container"
+      prefWidth="500" prefHeight="300">
+
+    <Label text="⚠ Verbinding mislukt" styleClass="db-fout-titel"/>
+
+    <Label text="De database is niet bereikbaar. Controleer of MySQL actief is&#10;en of db.properties de juiste gegevens bevat."
+           styleClass="db-fout-tekst" wrapText="true" alignment="CENTER"/>
+
+    <HBox spacing="12" alignment="CENTER">
+        <Button fx:id="btnOpnieuw" text="Opnieuw proberen" onAction="#opnieuwProberen" styleClass="btn-primary"/>
+        <Button text="Afsluiten" onAction="#afsluiten" styleClass="btn-secondary"/>
+    </HBox>
+
+</VBox>

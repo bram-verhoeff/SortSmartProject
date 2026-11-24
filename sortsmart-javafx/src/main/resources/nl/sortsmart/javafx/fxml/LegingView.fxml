@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.LegingController"
+      spacing="16" styleClass="screen-container">
+
+    <!-- Koptekst -->
+    <HBox alignment="CENTER_LEFT" styleClass="screen-header">
+        <Label text="Leging registreren" styleClass="screen-title"/>
+    </HBox>
+
+    <!-- Formulier -->
+    <VBox spacing="12" styleClass="form-card" maxWidth="520">
+
+        <HBox spacing="12">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Station"/>
+                <ComboBox fx:id="cbStation" maxWidth="Infinity" promptText="Kies station…"/>
+            </VBox>
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Vak"/>
+                <ComboBox fx:id="cbVak" maxWidth="Infinity" promptText="Kies vak…"/>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="4">
+            <Label text="Medewerker"/>
+            <ComboBox fx:id="cbMedewerker" maxWidth="Infinity" promptText="Kies medewerker…"/>
+        </VBox>
+
+        <HBox spacing="12">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Vulgraad vóór leging (%)"/>
+                <TextField fx:id="tfVulgraad" promptText="0 – 100"/>
+            </VBox>
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Gewicht (kg, optioneel)"/>
+                <TextField fx:id="tfGewicht" promptText="bijv. 3.40"/>
+            </VBox>
+        </HBox>
+
+        <Label text="Na registratie wordt de vulgraad van het vak automatisch op 0% gezet."
+               styleClass="hint-label" wrapText="true"/>
+
+        <Button text="Leging registreren" onAction="#registreerLeging"
+                styleClass="btn-primary" maxWidth="Infinity"/>
+
+    </VBox>
+
+</VBox>

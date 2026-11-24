@@ -1,0 +1,12 @@
+# Databaseverbinding voor SortSmart JavaFX
+# Kopieer dit bestand naar db.properties en vul je eigen gegevens in.
+# db.properties staat in .gitignore en wordt NIET meegeleverd in versiebeheer.
+
+# JDBC URL voor MySQL (pas poortnummer en databasenaam aan indien nodig)
+db.url=jdbc:mysql://localhost:3306/sortsmart?useSSL=false&serverTimezone=Europe/Amsterdam&allowPublicKeyRetrieval=true&connectTimeout=2000&socketTimeout=2000
+
+# MySQL-gebruikersnaam
+db.gebruiker=root
+
+# MySQL-wachtwoord
+db.wachtwoord=

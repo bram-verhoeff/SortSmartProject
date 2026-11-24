@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.ScansController"
+      spacing="12" styleClass="screen-container">
+
+    <!-- Koptekst -->
+    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="screen-header">
+        <Label text="Scans" styleClass="screen-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="⟳ Vernieuwen" onAction="#vernieuwen" styleClass="btn-secondary"/>
+    </HBox>
+
+    <!-- Filters -->
+    <HBox spacing="12" alignment="CENTER_LEFT" styleClass="filter-bar">
+        <Label text="Station:"/>
+        <ComboBox fx:id="cbStationFilter" promptText="Alle stations" prefWidth="180"/>
+        <Label text="Resultaat:"/>
+        <ComboBox fx:id="cbResultaatFilter" prefWidth="180"/>
+        <Label text="Max. rijen:"/>
+        <Spinner fx:id="spLimiet" prefWidth="80" editable="true"/>
+        <Button text="Toepassen" onAction="#filterToepassen" styleClass="btn-secondary"/>
+        <Button text="Wissen"    onAction="#filterWissen"    styleClass="btn-link"/>
+    </HBox>
+
+    <!-- Tabel -->
+    <TableView fx:id="tabelScans" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="kolScanId"         text="ID"             prefWidth="70"/>
+            <TableColumn fx:id="kolStation"         text="Station"        prefWidth="130"/>
+            <TableColumn fx:id="kolTijdstip"        text="Tijdstip"       prefWidth="160"/>
+            <TableColumn fx:id="kolItemtype"        text="Itemtype"       prefWidth="170"/>
+            <TableColumn fx:id="kolBetrouwbaarheid" text="Betrouwbaarh. %" prefWidth="130"/>
+            <TableColumn fx:id="kolResultaat"       text="Resultaat"      prefWidth="160"/>
+        </columns>
+        <placeholder><Label text="Geen scans gevonden."/></placeholder>
+    </TableView>
+
+</VBox>

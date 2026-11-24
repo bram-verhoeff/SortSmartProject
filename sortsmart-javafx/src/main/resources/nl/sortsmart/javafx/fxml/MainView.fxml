@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="nl.sortsmart.javafx.controller.MainController"
+            styleClass="root-pane">
+
+    <!-- Zijmenu -->
+    <left>
+        <VBox styleClass="sidebar" spacing="4" minWidth="220">
+            <Label text="SortSmart" styleClass="sidebar-title"/>
+            <Separator styleClass="sidebar-separator"/>
+            <Button text="📺  Stationsdisplay"    onAction="#toonStationsdisplay" styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="🏠  Dashboard"          onAction="#toonDashboard"       styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="📡  Stations"           onAction="#toonStations"        styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="🔔  Meldingen"          onAction="#toonMeldingen"       styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="🗑️  Leging registreren"  onAction="#toonLeging"          styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="📋  Scans"              onAction="#toonScans"           styleClass="nav-btn" maxWidth="Infinity"/>
+            <Button text="⚙️  Instellingen"       onAction="#toonInstellingen"    styleClass="nav-btn" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <!-- Inhoudsgebied -->
+    <center>
+        <StackPane fx:id="contentArea" styleClass="content-area"/>
+    </center>
+
+</BorderPane>

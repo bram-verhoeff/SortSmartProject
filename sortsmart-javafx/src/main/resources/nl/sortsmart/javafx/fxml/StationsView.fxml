@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.StationsController"
+      spacing="12" styleClass="screen-container">
+
+    <!-- Koptekst -->
+    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="screen-header">
+        <Label text="Sorteerstations" styleClass="screen-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="⟳ Vernieuwen" onAction="#vernieuwen" styleClass="btn-secondary"/>
+    </HBox>
+
+    <!-- Tabel -->
+    <TableView fx:id="tabelStations" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="kolSerienummer" text="Serienummer"  prefWidth="150"/>
+            <TableColumn fx:id="kolCampus"      text="Campus"       prefWidth="150"/>
+            <TableColumn fx:id="kolLocatie"     text="Locatie"      prefWidth="250"/>
+            <TableColumn fx:id="kolStatus"      text="Status"       prefWidth="100"/>
+            <TableColumn fx:id="kolFirmware"    text="Firmware"     prefWidth="90"/>
+        </columns>
+        <placeholder><Label text="Geen stations gevonden."/></placeholder>
+    </TableView>
+
+    <!-- Onderpaneel -->
+    <HBox spacing="20">
+
+        <!-- Nieuw station toevoegen -->
+        <VBox spacing="8" styleClass="form-card" HBox.hgrow="ALWAYS">
+            <Label text="Station toevoegen" styleClass="form-title"/>
+            <HBox spacing="8">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Campus"/>
+                    <ComboBox fx:id="cbCampus" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Serienummer"/>
+                    <TextField fx:id="tfSerienummer" promptText="SS-2026-0001"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="8">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Locatieomschrijving"/>
+                    <TextField fx:id="tfLocatie" promptText="Kantine, begane grond"/>
+                </VBox>
+                <VBox spacing="4" prefWidth="80">
+                    <Label text="Verdieping"/>
+                    <TextField fx:id="tfVerdieping" promptText="0"/>
+                </VBox>
+            </HBox>
+            <HBox spacing="8">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Installatiedatum"/>
+                    <DatePicker fx:id="dpInstallatiedatum" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label text="Firmwareversie"/>
+                    <TextField fx:id="tfFirmware" promptText="0.3.1"/>
+                </VBox>
+            </HBox>
+            <Button text="Station toevoegen" onAction="#stationToevoegen" styleClass="btn-primary"/>
+        </VBox>
+
+        <!-- Status wijzigen -->
+        <VBox spacing="8" styleClass="form-card" prefWidth="260">
+            <Label text="Status wijzigen" styleClass="form-title"/>
+            <Label text="Selecteer een station in de tabel,\nkies daarna een nieuwe status." styleClass="hint-label" wrapText="true"/>
+            <ComboBox fx:id="cbNieuweStatus" maxWidth="Infinity" promptText="Kies status…"/>
+            <Button text="Status opslaan" onAction="#statusWijzigen" styleClass="btn-primary"/>
+        </VBox>
+
+    </HBox>
+
+</VBox>

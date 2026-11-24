@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.MeldingenController"
+      spacing="12" styleClass="screen-container">
+
+    <!-- Koptekst -->
+    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="screen-header">
+        <Label text="Meldingen" styleClass="screen-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <CheckBox fx:id="cbToonAlles" text="Toon ook afgehandeld" onAction="#filterWijzigen"/>
+        <Button text="⟳ Vernieuwen" onAction="#vernieuwen" styleClass="btn-secondary"/>
+    </HBox>
+
+    <!-- Tabel -->
+    <TableView fx:id="tabelMeldingen" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="kolId"          text="#"           prefWidth="50"/>
+            <TableColumn fx:id="kolStation"     text="Station"     prefWidth="130"/>
+            <TableColumn fx:id="kolType"        text="Type"        prefWidth="130"/>
+            <TableColumn fx:id="kolVak"         text="Vak"         prefWidth="50"/>
+            <TableColumn fx:id="kolOmschrijving" text="Omschrijving" prefWidth="250"/>
+            <TableColumn fx:id="kolGemeld"      text="Gemeld op"   prefWidth="140"/>
+            <TableColumn fx:id="kolStatus"      text="Status"      prefWidth="110"/>
+        </columns>
+        <placeholder><Label text="Geen open meldingen."/></placeholder>
+    </TableView>
+
+    <!-- Afhandelen -->
+    <HBox spacing="12" alignment="CENTER_LEFT" styleClass="form-card">
+        <Label text="Afgehandeld door:"/>
+        <ComboBox fx:id="cbMedewerker" promptText="Kies medewerker…" prefWidth="200"/>
+        <Button text="Melding afhandelen" onAction="#handelAf" styleClass="btn-primary"/>
+        <Label text="Selecteer eerst een melding in de tabel." styleClass="hint-label"/>
+    </HBox>
+
+</VBox>

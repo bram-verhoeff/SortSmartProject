@@ -1,0 +1,45 @@
+{
+  "classes": {
+    "Papier": [
+      "a photo of paper",
+      "a photo of a cardboard box",
+      "a photo of a newspaper",
+      "a photo of a paper bag",
+      "a photo of an egg carton"
+    ],
+    "PMD": [
+      "a photo of plastic packaging",
+      "a photo of a plastic food container",
+      "a photo of a tin can",
+      "a photo of a plastic bag",
+      "a photo of a yogurt cup",
+      "a photo of a plastic drink bottle",
+      "a photo of a plastic water bottle",
+      "a photo of a soda can",
+      "a photo of a drink carton"
+    ],
+    "Etensresten": [
+      "a photo of fruit",
+      "a photo of vegetables",
+      "a photo of food waste",
+      "a photo of a banana peel",
+      "a photo of an apple core"
+    ],
+    "Rest": [
+      "a photo of a disposable coffee cup",
+      "a photo of a paper coffee cup with a plastic lid",
+      "a photo of a takeaway coffee cup",
+      "a photo of a dirty pizza box",
+      "a photo of a plastic straw",
+      "a photo of a crisp packet",
+      "a photo of a used tissue",
+      "a photo of a candy wrapper",
+      "a photo of a glass bottle"
+    ],
+    "none": [
+      "a photo of a person's face",
+      "a photo of an empty room",
+      "a photo of a wall"
+    ]
+  }
+}

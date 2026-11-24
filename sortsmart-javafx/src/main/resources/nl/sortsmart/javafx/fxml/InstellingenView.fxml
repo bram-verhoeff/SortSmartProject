@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="nl.sortsmart.javafx.controller.InstellingenController"
+      spacing="16" styleClass="screen-container">
+
+    <!-- Koptekst -->
+    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="screen-header">
+        <VBox spacing="4">
+            <Label text="Instellingen" styleClass="screen-title"/>
+            <Label text="Configuratie voor AI-herkenning (CLIP / Ollama) en camerasensor" styleClass="text-muted"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="💾 Opslaan" onAction="#opslaan" styleClass="btn-primary"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" styleClass="scroll-pane-clean" VBox.vgrow="ALWAYS">
+        <VBox spacing="20">
+            <!-- Kaart 1: Selectie Herkenningsengine -->
+            <VBox styleClass="card" spacing="14">
+                <Label text="⚡ Herkenningsmodus" styleClass="card-title"/>
+                <Label text="Kies tussen razendsnelle lokale CLIP-classificatie (aanbevolen, &lt; 0,2 s) of het zwaardere visuele Ollama-model." styleClass="text-muted"/>
+
+                <HBox spacing="16" alignment="CENTER_LEFT">
+                    <Label text="Actieve modus:" styleClass="form-label"/>
+                    <ComboBox fx:id="cbProviderModus" prefWidth="260"/>
+                    <Label fx:id="lblModusUitleg" text="(Aanbevolen: Snel via CLIP)" styleClass="text-success"/>
+                </HBox>
+            </VBox>
+
+            <!-- Kaart 2: Snelle CLIP Instellingen -->
+            <VBox fx:id="kaartClip" styleClass="card" spacing="16">
+                <Label text="🚀 Snel (CLIP, lokaal ONNX-model)" styleClass="card-title"/>
+                <Label text="Klasseert beelden binnen 50 tot 200 ms lokaal op de CPU zonder externe service." styleClass="text-muted"/>
+
+                <GridPane hgap="16" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="180" prefWidth="200"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Model pad -->
+                    <Label text="Modelmap (clip-vit-base-patch32):" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <TextField fx:id="txtClipModelPad" HBox.hgrow="ALWAYS"/>
+                        <Button text="📁 Bladeren..." onAction="#kiesClipMap" styleClass="btn-secondary"/>
+                        <Button text="🔍 Controleren" onAction="#controleerClipModel" styleClass="btn-secondary"/>
+                    </HBox>
+
+                    <!-- Model status -->
+                    <Label text="Status modelbestanden:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <Label fx:id="lblClipStatus" text="Niet gecontroleerd" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="status-pill-offline"/>
+
+                    <!-- Minimale betrouwbaarheid voor CLIP -->
+                    <Label text="Minimale zekerheid (CLIP):" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="14" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <Slider fx:id="sliderClipConfidence" min="15" max="85" value="40" blockIncrement="5" prefWidth="280"/>
+                        <Label fx:id="lblClipConfidence" text="40%" styleClass="form-value-bold"/>
+                        <Label text="(Standaard voor CLIP: 40%; daaronder 'Niet herkend')" styleClass="text-muted"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+
+            <!-- Kaart 3: Nauwkeurig (Ollama) -->
+            <VBox fx:id="kaartOllama" styleClass="card" spacing="16">
+                <Label text="🦙 Nauwkeurig (Ollama Vision)" styleClass="card-title"/>
+                <Label text="Gebruikt gemma3:4b via Ollama. Geeft uitgebreide JSON-classificaties maar heeft lokaal 60-95s nodig." styleClass="text-muted"/>
+
+                <GridPane hgap="16" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="180" prefWidth="200"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Ollama URL -->
+                    <Label text="Ollama Server URL:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <TextField fx:id="txtOllamaUrl" promptText="http://127.0.0.1:11434" HBox.hgrow="ALWAYS"/>
+                        <Button text="🔌 Verbinding testen" onAction="#testVerbinding" styleClass="btn-secondary"/>
+                    </HBox>
+
+                    <!-- Status van verbinding -->
+                    <Label text="Verbindingsstatus:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <Label fx:id="lblVerbindingStatus" text="Niet getest" GridPane.rowIndex="1" GridPane.columnIndex="1" styleClass="status-pill-offline"/>
+
+                    <!-- Model selectie -->
+                    <Label text="Visueel Model:" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <ComboBox fx:id="cbModel" prefWidth="280" promptText="Selecteer model..."/>
+                        <Button text="⟳ Ophalen" onAction="#verversModellen" styleClass="btn-secondary"/>
+                        <Label text="(gemma3:4b)" styleClass="text-muted"/>
+                    </HBox>
+
+                    <!-- Minimale betrouwbaarheid Ollama -->
+                    <Label text="Minimale betrouwbaarheid:" GridPane.rowIndex="3" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="14" alignment="CENTER_LEFT" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                        <Slider fx:id="sliderConfidence" min="10" max="95" value="60" blockIncrement="5" prefWidth="280"/>
+                        <Label fx:id="lblConfidence" text="60%" styleClass="form-value-bold"/>
+                        <Label text="(Standaard: 60%)" styleClass="text-muted"/>
+                    </HBox>
+
+                    <!-- Time-out instelling -->
+                    <Label text="Time-out (seconden):" GridPane.rowIndex="4" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <HBox spacing="14" alignment="CENTER_LEFT" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                        <Spinner fx:id="spTimeout" prefWidth="120" editable="true"/>
+                        <Label text="(Standaard: 180 s)" styleClass="text-muted"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+
+            <!-- Kaart 4: Camera & Sensor -->
+            <VBox styleClass="card" spacing="16">
+                <Label text="📷 Camera &amp; Bewegingsdetectie" styleClass="card-title"/>
+                <Label text="Beheert de videobron en automatische trigger bij stilstand." styleClass="text-muted"/>
+
+                <GridPane hgap="16" vgap="14">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="180" prefWidth="200"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Camera selectie -->
+                    <Label text="Actieve Camera:" GridPane.rowIndex="0" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <ComboBox fx:id="cbCamera" prefWidth="280" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <!-- Automatisch scannen -->
+                    <Label text="Automatisch scannen:" GridPane.rowIndex="1" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <CheckBox fx:id="chkAutoScan" text="Activeer herkenning zodra een item stil ligt voor de camera"
+                              GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <!-- Beveiliging & Privacy toelichting -->
+                    <Label text="Privacy &amp; Beveiliging:" GridPane.rowIndex="2" GridPane.columnIndex="0" styleClass="form-label"/>
+                    <Label text="Camerabeelden worden uitsluitend in werkgeheugen geanalyseerd. Er worden nooit foto's opgeslagen; alleen hashes."
+                           GridPane.rowIndex="2" GridPane.columnIndex="1" styleClass="text-muted" wrapText="true"/>
+                </GridPane>
+            </VBox>
+
+            <!-- Statusmelding opslaan -->
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label fx:id="lblOpslaanStatus" text="" styleClass="text-success"/>
+            </HBox>
+        </VBox>
+    </ScrollPane>
+
+</VBox>
