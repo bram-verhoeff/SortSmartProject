@@ -199,7 +199,11 @@ public class CameraManager {
                         SceneDetector.Update update = sceneDetector.verwerkFrame(grayBytes, System.currentTimeMillis());
                         if (update.isScan() && scanTriggerListener != null) {
                             final byte[] scanSnapshot = jpegBytes.clone();
-                            scanTriggerListener.accept(scanSnapshot);
+                            Platform.runLater(() -> {
+                                if (scanTriggerListener != null) {
+                                    scanTriggerListener.accept(scanSnapshot);
+                                }
+                            });
                         }
                     }
                 }

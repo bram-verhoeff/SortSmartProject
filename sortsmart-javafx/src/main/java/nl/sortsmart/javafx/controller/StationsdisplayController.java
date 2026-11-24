@@ -264,6 +264,10 @@ public class StationsdisplayController implements Initializable {
     }
 
     private void voerAiScanUit(byte[] jpegBytes) {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(() -> voerAiScanUit(jpegBytes));
+            return;
+        }
         if (scanBezig.getAndSet(true)) {
             return;
         }

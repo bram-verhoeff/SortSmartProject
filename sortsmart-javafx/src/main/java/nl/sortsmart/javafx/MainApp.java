@@ -51,7 +51,11 @@ public class MainApp extends Application {
             System.out.println("[SortSmart] Applicatie wordt afgesloten...");
             System.exit(0);
         });
+        primaryStage.setAlwaysOnTop(true);
         primaryStage.show();
+        primaryStage.toFront();
+        primaryStage.requestFocus();
+        primaryStage.setAlwaysOnTop(false);
     }
 
     private void toonDatabaseFout(Stage primaryStage) throws IOException {

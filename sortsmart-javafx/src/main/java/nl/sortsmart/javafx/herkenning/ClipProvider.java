@@ -38,11 +38,10 @@ public class ClipProvider implements AiProvider {
     private boolean geladen = false;
     private String laadFout = null;
 
-    // Gemiddelde L2-genormaliseerde embeddings per klasse (Papier, PMD, Etensresten, Rest, none)
-    private final Map<String, float[]> classEmbeddings = new LinkedHashMap<>();
+    // Alle klassen in volgorde (Papier, PMD, Etensresten, Rest, none)
     private final List<String> klassenVolgorde = new ArrayList<>();
 
-    // Individuele prompts voor itemtype-bepaling
+    // Individuele prompts voor berekening en itemtype-bepaling
     private static class PromptItem {
         final String klasse;
         final String promptTekst;
@@ -150,7 +149,7 @@ public class ClipProvider implements AiProvider {
 
         // Normaliseer elke prompt embedding en sla op
         allePrompts.clear();
-        Map<String, List<float[]>> klassePromptEmbeddings = new LinkedHashMap<>();
+        klassenVolgorde.clear();
 
         for (int i = 0; i < n; i++) {
             float[] emb = textEmbeddings[i];
@@ -161,27 +160,9 @@ public class ClipProvider implements AiProvider {
             String itemNaam = parseItemtype(promptTekst);
 
             allePrompts.add(new PromptItem(klasse, promptTekst, itemNaam, emb));
-            klassePromptEmbeddings.computeIfAbsent(klasse, k -> new ArrayList<>()).add(emb);
-        }
-
-        // Bereken gemiddelde genormaliseerde vector per klasse
-        classEmbeddings.clear();
-        klassenVolgorde.clear();
-
-        for (Map.Entry<String, List<float[]>> entry : klassePromptEmbeddings.entrySet()) {
-            String klasse = entry.getKey();
-            List<float[]> embs = entry.getValue();
-
-            float[] gem = new float[embDim];
-            for (float[] v : embs) {
-                for (int d = 0; d < embDim; d++) {
-                    gem[d] += v[d];
-                }
+            if (!klassenVolgorde.contains(klasse)) {
+                klassenVolgorde.add(klasse);
             }
-            l2Normaliseer(gem);
-
-            classEmbeddings.put(klasse, gem);
-            klassenVolgorde.add(klasse);
         }
     }
 
@@ -215,7 +196,11 @@ public class ClipProvider implements AiProvider {
         if (result.isEmpty()) {
             result.put("Papier", List.of("a photo of paper", "a photo of a cardboard box", "a photo of a newspaper", "a photo of a paper bag", "a photo of an egg carton"));
             result.put("PMD", List.of("a photo of plastic packaging", "a photo of a plastic food container", "a photo of a tin can", "a photo of a plastic bag", "a photo of a yogurt cup", "a photo of a plastic drink bottle", "a photo of a plastic water bottle", "a photo of a soda can", "a photo of a drink carton"));
-            result.put("Etensresten", List.of("a photo of fruit", "a photo of vegetables", "a photo of food waste", "a photo of a banana peel", "a photo of an apple core"));
+            result.put("Etensresten", List.of(
+                    "a photo of fruit", "a photo of vegetables", "a photo of food waste", "a photo of a banana peel", "a photo of an apple core",
+                    "a photo of a used tea bag", "a photo of a tea bag", "a photo of a tea bag with a string and a paper tag",
+                    "a photo of coffee grounds", "a photo of a coffee pad", "a photo of eggshells", "a photo of bread", "a photo of leftover food on a plate"
+            ));
             result.put("Rest", List.of("a photo of a disposable coffee cup", "a photo of a paper coffee cup with a plastic lid", "a photo of a takeaway coffee cup", "a photo of a dirty pizza box", "a photo of a plastic straw", "a crisp packet", "a photo of a used tissue", "a photo of a candy wrapper", "a photo of a glass bottle"));
             result.put("none", List.of("a photo of a person's face", "a photo of an empty room", "a photo of a wall"));
         }
@@ -285,47 +270,63 @@ public class ClipProvider implements AiProvider {
         float[] imageEmb = imageEmbeddings[0];
         l2Normaliseer(imageEmb);
 
-        // 5. Softmax over 100 * dot(beeld, klasse)
-        int k = klassenVolgorde.size();
-        double[] logits = new double[k];
-        for (int i = 0; i < k; i++) {
-            String klasse = klassenVolgorde.get(i);
-            float[] classEmb = classEmbeddings.get(klasse);
-            double inwendigProduct = inwendigProduct(imageEmb, classEmb);
-            logits[i] = 100.0 * inwendigProduct;
+        // 5. Bereken voor ELKE prompt apart: logit = 100 * dot(beeld, prompt-embedding)
+        int numPrompts = allePrompts.size();
+        if (numPrompts == 0) {
+            return HerkenningResultaat.nietHerkend("Geen prompts geladen").metLatency(0);
         }
 
-        double[] kansen = softmax(logits);
+        double[] promptLogits = new double[numPrompts];
+        for (int i = 0; i < numPrompts; i++) {
+            PromptItem pi = allePrompts.get(i);
+            double inwendigProduct = inwendigProduct(imageEmb, pi.embedding);
+            promptLogits[i] = 100.0 * inwendigProduct;
+        }
 
-        int besteIndex = 0;
-        double hoogsteKans = kansen[0];
-        for (int i = 1; i < k; i++) {
-            if (kansen[i] > hoogsteKans) {
-                hoogsteKans = kansen[i];
-                besteIndex = i;
+        // Softmax over ALLE prompts samen
+        double[] promptKansen = softmax(promptLogits);
+
+        // Tel de kansen per klasse op
+        Map<String, Double> klasseKansen = new LinkedHashMap<>();
+        for (String k : klassenVolgorde) {
+            klasseKansen.put(k, 0.0);
+        }
+        for (int i = 0; i < numPrompts; i++) {
+            PromptItem pi = allePrompts.get(i);
+            klasseKansen.put(pi.klasse, klasseKansen.getOrDefault(pi.klasse, 0.0) + promptKansen[i]);
+        }
+
+        // Bepaal klasse met hoogste som
+        String hoogsteKlasse = null;
+        double hoogsteSom = -1.0;
+        for (Map.Entry<String, Double> entry : klasseKansen.entrySet()) {
+            if (entry.getValue() > hoogsteSom) {
+                hoogsteSom = entry.getValue();
+                hoogsteKlasse = entry.getKey();
             }
         }
 
-        String winnendeKlasse = klassenVolgorde.get(besteIndex);
-        int betrouwbaarheid = (int) Math.round(hoogsteKans * 100.0);
+        int betrouwbaarheid = (int) Math.round(hoogsteSom * 100.0);
         long latencyMs = System.currentTimeMillis() - startTijd;
 
-        // Als 'none' wint of de score onder de drempelwaarde ligt
-        if ("none".equalsIgnoreCase(winnendeKlasse) || betrouwbaarheid < minBetrouwbaarheid) {
+        // none mag nooit winnen; als none de hoogste som heeft of de winnende som onder de minimale betrouwbaarheid ligt: NietHerkend
+        if ("none".equalsIgnoreCase(hoogsteKlasse) || betrouwbaarheid < minBetrouwbaarheid || hoogsteKlasse == null) {
             return HerkenningResultaat.nietHerkend(
-                    "Lage zekerheid (" + betrouwbaarheid + "% < " + minBetrouwbaarheid + "%) of geen afval (" + winnendeKlasse + ")"
+                    "Lage zekerheid (" + betrouwbaarheid + "% < " + minBetrouwbaarheid + "%) of geen afval (" + hoogsteKlasse + ")"
             ).metLatency(latencyMs);
         }
 
-        // 6. Zoek het best passende itemtype binnen de winnende klasse
-        String bestItemtype = "Afvalitem";
-        double bestePromptSim = -1.0;
+        String winnendeKlasse = hoogsteKlasse;
 
-        for (PromptItem pi : allePrompts) {
+        // 6. Zoek het best passende itemtype van de winnende klasse (hoogste individuele kans)
+        String bestItemtype = "Afvalitem";
+        double bestePromptKans = -1.0;
+
+        for (int i = 0; i < numPrompts; i++) {
+            PromptItem pi = allePrompts.get(i);
             if (pi.klasse.equalsIgnoreCase(winnendeKlasse)) {
-                double sim = inwendigProduct(imageEmb, pi.embedding);
-                if (sim > bestePromptSim) {
-                    bestePromptSim = sim;
+                if (promptKansen[i] > bestePromptKans) {
+                    bestePromptKans = promptKansen[i];
                     bestItemtype = pi.itemNaam;
                 }
             }
